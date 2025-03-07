@@ -3,11 +3,11 @@ import express from 'express';
 import session from 'express-session';
 import dotenv from 'dotenv';
 import { KickAuthClient } from 'kick-auth';
-import { createclient } from './index.js';
+//import { createclient } from './index.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 3000;
 
 // Configuración del middleware de sesión
 app.use(session({
@@ -27,7 +27,10 @@ const kickAuth = new KickAuthClient({
   redirectUri: process.env.KICK_REDIRECT_URI,
   scopes: ['user:read', 'channel:read',"events:subscribe","channel:write","chat:write"] // Puedes agregar o quitar scopes según tus necesidades
 });
-
+app.post('/webhook', (req, res) => {
+  console.log('Evento recibido:', req.body);
+  res.sendStatus(200);
+});
 // Ruta para iniciar el flujo de autenticación (login)
 app.get('/auth/login', async (req, res) => {
   try {
@@ -103,18 +106,16 @@ app.get('/api/token', (req, res) => {
     }
     res.json({ accessToken: req.session.accessToken });
   });
-app.get('/api/bot', (req, res) => {
+/* app.get('/api/bot', (req, res) => {
     if (!req.session.accessToken) {
       return res.status(401).json({ error: 'No hay token de acceso disponible. Por favor, inicia sesión.' });
     }
     const token = req.session.accessToken;
     createclient(token);
     res.json({ accessToken: req.session.accessToken });
-  });
+  }); */
 // Ruta pública para la página de inicio
-app.get('/', (req, res) => {
-  res.send('<h1>Página de Inicio</h1><p><a href="/auth/login">Iniciar sesión con Kick</a></p>');
-});
+app.use(express.static('public'));
 
 // Inicia el servidor
 app.listen(PORT, () => {

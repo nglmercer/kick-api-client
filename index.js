@@ -1,8 +1,8 @@
 //const { KickClient } = require('@botk4cp3r/kick.js');
 import { KickClient } from '@botk4cp3r/kick.js';
 // Create client instance
-const defaultToken = "MWIZNJBHY2MTNMQ0ZS0ZOGE1LTHMNZYTYZU2N2EWZJRHMJZI";
-function createclient(TOKEN="MWIZNJBHY2MTNMQ0ZS0ZOGE1LTHMNZYTYZU2N2EWZJRHMJZI") {
+const defaultToken = "OWY2YTVMZJMTYZDMZC0ZOTG2LTGYZJATMZDKMMVMMJHLOTFH";
+function createclient(TOKEN="OWY2YTVMZJMTYZDMZC0ZOTG2LTGYZJATMZDKMMVMMJHLOTFH") {
 
 }
 const client = new KickClient({
@@ -112,9 +112,8 @@ const randomString = () => {
     return Math.random().toString(36).substring(2, 15);
 };
 setTimeout( async () => {
-    modifytittle(randomString());
+    modifytittle("dev in stream test!");
 }, 1000);
 setTimeout( async () => {
     await sendMessage("!streamtitle");
 }, 2000);
-//export { createclient}
