@@ -11,6 +11,7 @@
 </body>
 </html>
 <script>
+    const defaultToken = window.localStorage.accessToken || "M2ZLOTRLZJITOTA0NI0ZN2UXLWI0YTQTMTJHODLLMMU2YTM3";
     async function getToken() {
     try {
         const response = await fetch('/api/token', {

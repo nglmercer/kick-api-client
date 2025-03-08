@@ -1,177 +1,136 @@
-const defaultToken = window.localStorage.accessToken || "M2ZLOTRLZJITOTA0NI0ZN2UXLWI0YTQTMTJHODLLMMU2YTM3";
-const alleventsArray = [
-    "chat.message.sent",
-    "channel.followed",
-    "channel.subscription.renewal",
-    "channel.subscription.gifts",
-    "channel.subscription.new",
-];
-const arrayobj = alleventsArray.map((event) => {
-    return {
-        name: event,
-        version: 1,
-    };
-});
-async function getEvents() {
-    try {
-        const response = await fetch('https://api.kick.com/public/v1/events/subscriptions', {
-            headers: {
-                'Authorization': `Bearer ${defaultToken}`
-            },
-            method: 'GET',
-        });
-        const data = await response.json();
+// KickAPI Class - Handles all API requests to Kick.com
+class KickAPI {
+    constructor(token) {
+        this.token = token || window.localStorage.accessToken || "M2ZLOTRLZJITOTA0NI0ZN2UXLWI0YTQTMTJHODLLMMU2YTM3";
+        this.baseUrl = "https://api.kick.com/public/v1";
+        this.defaultHeaders = {
+            'Authorization': `Bearer ${this.token}`,
+            'Content-Type': 'application/json'
+        };
+    }
+
+    // Generic request method
+    async request(endpoint, method = 'GET', body = null, customHeaders = {}) {
+        try {
+            const url = `${this.baseUrl}${endpoint}`;
+            const headers = { ...this.defaultHeaders, ...customHeaders };
+            
+            const options = {
+                method,
+                headers
+            };
+
+            if (body && (method === 'POST' || method === 'PATCH')) {
+                options.body = JSON.stringify(body);
+            }
+
+            const response = await fetch(url, options);
+            
+            // Handle common error status codes
+            if (response.status === 401) throw new UnauthorizedError();
+            if (response.status === 403) throw new ForbiddenError();
+            if (!response.ok) throw new KickApiError(`HTTP error! status: ${response.status}`, response.status);
+            
+            // For 204 No Content responses
+            if (response.status === 204) {
+                return { success: true };
+            }
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error(`Error in ${method} request to ${endpoint}:`, error);
+            throw error;
+        }
+    }
+
+    // GET request wrapper
+    async get(endpoint, customHeaders = {}) {
+        return this.request(endpoint, 'GET', null, customHeaders);
+    }
+
+    // POST request wrapper
+    async post(endpoint, body, customHeaders = {}) {
+        return this.request(endpoint, 'POST', body, customHeaders);
+    }
+
+    // PATCH request wrapper
+    async patch(endpoint, body, customHeaders = {}) {
+        return this.request(endpoint, 'PATCH', body, customHeaders);
+    }
+
+    // Events API
+    async getEvents() {
+        const data = await this.get('/events/subscriptions');
         console.log(data);
         return data;
-    } catch (error) {
-        console.error('Error al obtener eventos:', error);                      
     }
-}
 
-async function postEvent(arrayevents) {
-    console.log("arrayevents", arrayevents);
-    try {
-        const response = await fetch('https://api.kick.com/public/v1/events/subscriptions', {
-            headers: {
-                'Authorization': `Bearer ${defaultToken}`,
-                'Content-Type': 'application/json'
-            },
-            method: 'POST',
-            body: JSON.stringify({
-                "events": await arrayevents ||  arrayobj,
-                "method": "webhook",
-                // Si la API requiere enviar la URL del webhook, podrías incluir algo como:
-                "webhookUrl": "https://webhook-js.onrender.com/webhook"
-              }),
-        });
-        const data = await response.json();
-        console.log('Evento creado:', data, arrayobj);
-    } catch (error) {
-        console.error('Error al crear evento:', error);
-    }
-}
-async function initializeEvents(){
-    const events = await getEvents();
-    console.log("events", events);
-    postEvent(mapEvents(events.data));
-}
-async function mapEvents(data) {
-    if (!data) return;
-    return data.map((ev) => {
-        return {
-            name: ev.event,
-            ...ev,
+    async postEvent(events = null) {
+        const defaultEvents = alleventsArray.map(event => ({
+            name: event,
+            version: 1
+        }));
+        console.log("events", events);
+        const body = {
+            events: await events || defaultEvents,
+            method: "webhook",
+            webhookUrl: "https://webhook-js.onrender.com/webhook"
         };
-    });
-}
-async function getcategory() {
-    try {
-        const response = await fetch('https://api.kick.com/public/v1/categories', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${defaultToken}`
-            },
-        });
-        
-        const data = await response.json();
+
+        const data = await this.post('/events/subscriptions', body);
+        console.log('Evento creado:', data);
+        return data;
+    }
+
+    // Categories API
+    async getCategories() {
+        const data = await this.get('/categories');
         console.log('Categorias:', data);
         return data;
-    } catch (error) {
-        console.error('Error al obtener categorias:', error);
     }
-}
-getcategory();
-initializeEvents();
-const socket = new WebSocket("wss://webhook-js.onrender.com/ws");
 
-socket.onopen = () => {
-  console.log("Conectado al WebSocket");
-  socket.send(JSON.stringify({ message: "Hola desde el cliente!" }));
-};
+    // Chat API
+    async sendChatMessage(content = "Hola desde el cliente!", broadcasterId = 4496857, type = "user") {
+        const body = {
+            broadcaster_user_id: broadcasterId,
+            content: content,
+            type: type
+        };
 
-socket.onmessage = (event) => {
-  const message = parseIfJson(event.data);
-  console.log("Mensaje recibido:", message);
-};
-
-socket.onclose = () => {
-  console.log("Conexión cerrada");
-};
-
-socket.onerror = (error) => {
-  console.error("Error en WebSocket:", error);
-};
-
-async function fetchserver() {
-    try {
-        fetch('https://webhook-js.onrender.com/webhook',
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    event: arrayobj
-                })
-                
-            }
-        )
-    } catch (error) {
-        
-        console.error('Error al obtener el token:', error);
-    }
-}
-
-// setInterval(fetchserver, 4000);
-// setTimeout(fetchserver, 1000);
-function parseIfJson(str) {
-    try {
-        const parsed = JSON.parse(str);
-        return typeof parsed === "object" && parsed !== null ? parsed : str;
-    } catch (e) {
-        return str; // No es un JSON válido, devolver el string original
-    }
-}
-
-async function sendchatmessage(test = "Hola desde el cliente!") {
-    const jsonobj = {
-        "broadcaster_user_id": 4496857,// this get with getchannels()
-        "content": test,
-        "type": "user"// user, bot
-      };
-    const urlbase = "https://api.kick.com/"
-    try {
-        const response = await fetch(urlbase + 'public/v1/chat', {
-            headers: {
-                'Authorization': `Bearer ${defaultToken}`,
-                'Content-Type': 'application/json'
-            },
-            method: 'POST',
-            body: JSON.stringify(jsonobj),
-        });
-        const data = await response.json();
+        const data = await this.post('/chat', body);
         console.log('Mensaje enviado:', data);
-    } catch (error) {
-        console.error('Error al enviar mensaje:', error);
+        return data;
     }
-}
-sendchatmessage();
-async function getchannels() {
-    try {
-        const response = await fetch('https://api.kick.com/public/v1/channels', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${defaultToken}`
-            },
-        });
+
+    // Channels API
+    async getChannels(broadcasterIds = []) {
+        let endpoint = '/channels';
         
-        const data = await response.json();
+        if (broadcasterIds.length > 0) {
+            const url = new URL(`${this.baseUrl}${endpoint}`);
+            broadcasterIds.forEach(id => 
+                url.searchParams.append('broadcaster_user_id[]', id)
+            );
+            endpoint = url.pathname + url.search.replace(this.baseUrl, '');
+        }
+
+        const data = await this.get(endpoint);
         console.log('Canales:', data);
-    } catch (error) {
-        console.error('Error al obtener canales:', error);
+        return data;
+    }
+
+    async updateChannel(options) {
+        const body = {};
+        if (options.categoryId) body.category_id = options.categoryId;
+        if (options.streamTitle) body.stream_title = options.streamTitle;
+
+        const result = await this.patch('/channels', body);
+        return result.success;
     }
 }
-getchannels();
+
+// Error classes
 class KickApiError extends Error {
     constructor(message, status) {
         super(message);
@@ -194,56 +153,100 @@ class ForbiddenError extends KickApiError {
     }
 }
 
-class ChannelsService {
-    constructor(apiClient) {
-        this.apiClient = apiClient;
-        this.baseUrl = 'https://api.kick.com/public/v1/channels';
-    }
-
-    async getChannels(broadcasterIds = [], token) {
-        const url = new URL(this.baseUrl);
-        
-        if (broadcasterIds.length > 0) {
-            broadcasterIds.forEach(id => 
-                url.searchParams.append('broadcaster_user_id[]', id)
-            );
-        }
-
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-
-        if (response.status === 401) throw new UnauthorizedError();
-        if (response.status === 403) throw new ForbiddenError();
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-        return await response.json();
-    }
-
-    async updateChannel(options, token) {
-        const response = await fetch(this.baseUrl, {
-            method: 'PATCH',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                category_id: options.categoryId,
-                stream_title: options.streamTitle
-            })
-        });
-
-        if (response.status === 401) throw new UnauthorizedError();
-        if (response.status === 403) throw new ForbiddenError();
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-        return response.status === 204;
+// Helper function to parse JSON safely
+function parseIfJson(str) {
+    try {
+        const parsed = JSON.parse(str);
+        return typeof parsed === "object" && parsed !== null ? parsed : str;
+    } catch (e) {
+        return str; // No es un JSON válido, devolver el string original
     }
 }
-const channelsService = new ChannelsService();
-channelsService.updateChannel({
+
+// Event types
+const alleventsArray = [
+    "chat.message.sent",
+    "channel.followed",
+    "channel.subscription.renewal",
+    "channel.subscription.gifts",
+    "channel.subscription.new",
+];
+
+// Initialize API client
+const kickAPI = new KickAPI();
+
+// WebSocket connection
+const socket = new WebSocket("wss://webhook-js.onrender.com/ws");
+
+socket.onopen = () => {
+  console.log("Conectado al WebSocket");
+  socket.send(JSON.stringify({ message: "Hola desde el cliente!" }));
+};
+
+socket.onmessage = (event) => {
+  const message = parseIfJson(event.data);
+  console.log("Mensaje recibido:", message);
+};
+
+socket.onclose = () => {
+  console.log("Conexión cerrada");
+};
+
+socket.onerror = (error) => {
+  console.error("Error en WebSocket:", error);
+};
+
+// Helper function to map events
+async function mapEvents(data) {
+    if (!data) return;
+    return data.map((ev) => {
+        return {
+            name: ev.event,
+            ...ev,
+        };
+    });
+}
+
+// Initialize events
+async function initializeEvents() {
+    const events = await kickAPI.getEvents();
+    console.log("events", events);
+    if (events && events.data) {
+        kickAPI.postEvent(mapEvents(events.data));
+    }
+}
+
+// Function to send data to webhook server
+async function fetchserver() {
+    try {
+        fetch('https://webhook-js.onrender.com/webhook',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    event: alleventsArray.map(event => ({
+                        name: event,
+                        version: 1
+                    }))
+                })
+            }
+        )
+    } catch (error) {
+        console.error('Error al enviar datos al servidor:', error);
+    }
+}
+
+// Execute API calls
+kickAPI.getCategories();
+initializeEvents();
+kickAPI.sendChatMessage();
+kickAPI.getChannels();
+kickAPI.updateChannel({
     streamTitle: 'test1234!'
-}, defaultToken);
+});
+
+// Uncomment to enable periodic calls to the server
+// setInterval(fetchserver, 4000);
+// setTimeout(fetchserver, 1000);
