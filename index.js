@@ -1,15 +1,15 @@
 //const { KickClient } = require('@botk4cp3r/kick.js');
 import { KickClient } from '@botk4cp3r/kick.js';
 // Create client instance
-const defaultToken = "OWY2YTVMZJMTYZDMZC0ZOTG2LTGYZJATMZDKMMVMMJHLOTFH";
-function createclient(TOKEN="OWY2YTVMZJMTYZDMZC0ZOTG2LTGYZJATMZDKMMVMMJHLOTFH") {
+const defaultToken = "NMMZNDLHYJCTNWFMOC0ZNMYXLTK4ZTQTMDEXNTC1ODNKZWY0";
+function createclient(TOKEN="NMMZNDLHYJCTNWFMOC0ZNMYXLTK4ZTQTMDEXNTC1ODNKZWY0") {
 
 }
 const client = new KickClient({
     token: defaultToken,
-    webhookPort: 3002,
+    webhookPort: 3000,
     webhookPath: '/webhook',
-    webhookBaseUrl: 'http://localhost:3002'
+    webhookBaseUrl: 'https://far-seal-74.deno.dev'
 });
 const commands = {
     '!help': 'Available commands: !help, !ping',
