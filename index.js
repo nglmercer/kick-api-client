@@ -1,15 +1,15 @@
 //const { KickClient } = require('@botk4cp3r/kick.js');
 import { KickClient } from '@botk4cp3r/kick.js';
 // Create client instance
-const defaultToken = "NMMZNDLHYJCTNWFMOC0ZNMYXLTK4ZTQTMDEXNTC1ODNKZWY0";
-function createclient(TOKEN="NMMZNDLHYJCTNWFMOC0ZNMYXLTK4ZTQTMDEXNTC1ODNKZWY0") {
+const defaultToken = "NMU1ZTDJMGUTYTFJNY0ZZDGXLWIXNDITNGNKMTBLZMY2NMU1";
+function createclient(TOKEN="NMU1ZTDJMGUTYTFJNY0ZZDGXLWIXNDITNGNKMTBLZMY2NMU1") {
 
 }
 const client = new KickClient({
     token: defaultToken,
-    webhookPort: 3000,
+    webhookPort: 8080,
     webhookPath: '/webhook',
-    webhookBaseUrl: 'https://far-seal-74.deno.dev'
+    webhookBaseUrl: 'https://api-ws-rest-production.up.railway.app'
 });
 const commands = {
     '!help': 'Available commands: !help, !ping',
