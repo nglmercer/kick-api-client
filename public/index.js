@@ -64,6 +64,23 @@ async function mapEvents(data) {
         };
     });
 }
+async function getcategory() {
+    try {
+        const response = await fetch('https://api.kick.com/public/v1/categories', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${defaultToken}`
+            },
+        });
+        
+        const data = await response.json();
+        console.log('Categorias:', data);
+        return data;
+    } catch (error) {
+        console.error('Error al obtener categorias:', error);
+    }
+}
+getcategory();
 initializeEvents();
 const socket = new WebSocket("wss://webhook-js.onrender.com/ws");
 
@@ -227,7 +244,6 @@ class ChannelsService {
     }
 }
 const channelsService = new ChannelsService();
-/* channelsService.updateChannel({
-    categoryId: 1,
-    streamTitle: 'Hola desde el cliente!'
-}, defaultToken); */
+channelsService.updateChannel({
+    streamTitle: 'test1234!'
+}, defaultToken);
