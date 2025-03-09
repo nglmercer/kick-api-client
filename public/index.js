@@ -175,26 +175,7 @@ const alleventsArray = [
 // Initialize API client
 const kickAPI = new KickAPI();
 
-// WebSocket connection
-const socket = new WebSocket("wss://webhook-js.onrender.com/ws");
 
-socket.onopen = () => {
-  console.log("Conectado al WebSocket");
-  socket.send(JSON.stringify({ message: "Hola desde el cliente!" }));
-};
-
-socket.onmessage = (event) => {
-  const message = parseIfJson(event.data);
-  console.log("Mensaje recibido:", message);
-};
-
-socket.onclose = () => {
-  console.log("Conexión cerrada");
-};
-
-socket.onerror = (error) => {
-  console.error("Error en WebSocket:", error);
-};
 
 // Helper function to map events
 async function mapEvents(data) {
@@ -216,6 +197,15 @@ async function initializeEvents() {
     }
 }
 
+
+// Execute API calls
+kickAPI.getCategories();
+initializeEvents();
+kickAPI.sendChatMessage();
+kickAPI.getChannels();
+kickAPI.updateChannel({
+    streamTitle: 'test1234!'
+});
 // Function to send data to webhook server
 async function fetchserver() {
     try {
@@ -237,15 +227,6 @@ async function fetchserver() {
         console.error('Error al enviar datos al servidor:', error);
     }
 }
-
-// Execute API calls
-kickAPI.getCategories();
-initializeEvents();
-kickAPI.sendChatMessage();
-kickAPI.getChannels();
-kickAPI.updateChannel({
-    streamTitle: 'test1234!'
-});
 
 // Uncomment to enable periodic calls to the server
 // setInterval(fetchserver, 4000);
