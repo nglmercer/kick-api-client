@@ -3,36 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <script src="./index.js"></script>
+    <title>Kick.com - Login</title>
+    <script src="/index.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            max-width: 150px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #53b13b;
+            margin-bottom: 10px;
+        }
+        .description {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .login-btn {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+            padding: 15px 20px;
+            background-color: #53b13b;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .login-btn:hover {
+            background-color: #449a31;
+        }
+        .info-box {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f1f8e9;
+            border-left: 4px solid #53b13b;
+            border-radius: 4px;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #53b13b;
+        }
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Página de Inicio</h1><p><a href="/auth/login">Iniciar sesión con Kick</a></p>
+    <div class="container">
+        <header>
+            <img src="https://kick.com/favicon.ico" alt="Kick Logo" class="logo">
+            <h1>Iniciar sesión con Kick</h1>
+            <p class="description">Conecta tu cuenta de Kick para acceder a todas las funcionalidades de la aplicación.</p>
+        </header>
+        
+        <a href="/auth/login" class="login-btn">Iniciar sesión con Kick</a>
+        
+        <div class="info-box">
+            <h3>¿Qué permisos solicitamos?</h3>
+            <p>Al iniciar sesión, solicitamos los siguientes permisos:</p>
+            <ul>
+                <li><strong>user:read</strong> - Para acceder a información básica de tu perfil</li>
+                <li><strong>channel:read</strong> - Para acceder a información de tu canal</li>
+                <li><strong>events:subscribe</strong> - Para recibir notificaciones de eventos</li>
+                <li><strong>channel:write</strong> - Para realizar cambios en tu canal</li>
+                <li><strong>chat:write</strong> - Para enviar mensajes en el chat</li>
+            </ul>
+            <p>Puedes revocar estos permisos en cualquier momento desde tu cuenta de Kick.</p>
+        </div>
+        
+        <footer>
+            <p>Esta aplicación utiliza el flujo OAuth 2.1 para autenticación segura con Kick.com</p>
+        </footer>
+    </div>
 </body>
 </html>
-<script>
-    const defaultToken = window.localStorage.accessToken || "M2ZLOTRLZJITOTA0NI0ZN2UXLWI0YTQTMTJHODLLMMU2YTM3";
-    async function getToken() {
-    try {
-        const response = await fetch('/api/token', {
-            headers: {
-                'Authorization': `Bearer ${defaultToken}`
-            },
-            method: 'GET',
-        });
-
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (data && data.accessToken) {
-            localStorage.setItem('accessToken', data.accessToken);
-        }
-        console.log('data Token:', data);
-    } catch (error) {
-        console.error('Error al obtener el token:', error);
-    }
-}
-getToken();
-</script>

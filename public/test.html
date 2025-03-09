@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="./index.js"></script>
+</head>
+<body>
+    <h1>Página de Inicio</h1><p><a href="/login.html">Iniciar sesión con Kick</a></p>
+</body>
+</html>
+<script>
+    const defaultToken = window.localStorage.accessToken || "M2ZLOTRLZJITOTA0NI0ZN2UXLWI0YTQTMTJHODLLMMU2YTM3";
+    async function getToken() {
+    try {
+        const response = await fetch('/api/token', {
+            headers: {
+                'Authorization': `Bearer ${defaultToken}`
+            },
+            method: 'GET',
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data && data.accessToken) {
+            localStorage.setItem('accessToken', data.accessToken);
+        }
+        console.log('data Token:', data);
+    } catch (error) {
+        console.error('Error al obtener el token:', error);
+    }
+}
+getToken();
+</script>

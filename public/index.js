@@ -10,8 +10,20 @@ class KickAPI {
     }
 
     // Generic request method
-    async request(endpoint, method = 'GET', body = null, customHeaders = {}) {
+    async request(endpoint, method = 'GET', body = null, customHeaders = {}, isRetry = false) {
         try {
+            // Update token from localStorage in case it was refreshed in another tab/window
+            if (!isRetry) {
+                const storedToken = window.localStorage.getItem('accessToken');
+                if (storedToken && storedToken !== this.token) {
+                    this.token = storedToken;
+                    this.defaultHeaders = {
+                        'Authorization': `Bearer ${this.token}`,
+                        'Content-Type': 'application/json'
+                    };
+                }
+            }
+            
             const url = `${this.baseUrl}${endpoint}`;
             const headers = { ...this.defaultHeaders, ...customHeaders };
             
@@ -26,7 +38,17 @@ class KickAPI {
 
             const response = await fetch(url, options);
             
-            // Handle common error status codes
+            // Handle 401 Unauthorized - attempt to refresh token
+            if (response.status === 401 && !isRetry) {
+                console.log('Token expirado, intentando refrescar...');
+                const refreshed = await this.refreshToken();
+                if (refreshed) {
+                    // Retry the request with the new token
+                    return this.request(endpoint, method, body, customHeaders, true);
+                }
+            }
+            
+            // Handle other common error status codes
             if (response.status === 401) throw new UnauthorizedError();
             if (response.status === 403) throw new ForbiddenError();
             if (!response.ok) throw new KickApiError(`HTTP error! status: ${response.status}`, response.status);
@@ -42,6 +64,41 @@ class KickAPI {
             console.error(`Error in ${method} request to ${endpoint}:`, error);
             throw error;
         }
+    }
+    
+    // Token refresh method
+    async refreshToken() {
+        try {
+            const response = await fetch('/api/refresh-token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                // If refresh fails, redirect to login
+                window.location.href = '/auth/login';
+                return false;
+            }
+            
+            const data = await response.json();
+            if (data && data.accessToken) {
+                // Update token in localStorage and in the API instance
+                window.localStorage.setItem('accessToken', data.accessToken);
+                this.token = data.accessToken;
+                this.defaultHeaders = {
+                    'Authorization': `Bearer ${this.token}`,
+                    'Content-Type': 'application/json'
+                };
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error refreshing token:', error);
+            return false;
+        }
+    }
     }
 
     // GET request wrapper

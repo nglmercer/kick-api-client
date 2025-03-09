@@ -1,119 +1,144 @@
-//const { KickClient } = require('@botk4cp3r/kick.js');
-import { KickClient } from '@botk4cp3r/kick.js';
-// Create client instance
-const defaultToken = "NMU1ZTDJMGUTYTFJNY0ZZDGXLWIXNDITNGNKMTBLZMY2NMU1";
-function createclient(TOKEN="NMU1ZTDJMGUTYTFJNY0ZZDGXLWIXNDITNGNKMTBLZMY2NMU1") {
+// index.js
+import express from 'express';
+import session from 'express-session';
+import dotenv from 'dotenv';
+import { KickAuthClient } from 'kick-auth';
+//import { createclient } from './index.js';
+dotenv.config();
 
-}
-const client = new KickClient({
-    token: defaultToken,
-    webhookPort: 8080,
-    webhookPath: '/webhook',
-    webhookBaseUrl: 'https://api-ws-rest-production.up.railway.app'
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Configuración del middleware de sesión
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 horas
+  }
+}));
+
+// Inicializa el cliente de Kick Auth
+const kickAuth = new KickAuthClient({
+  clientId: process.env.KICK_CLIENT_ID,
+  clientSecret: process.env.KICK_CLIENT_SECRET,
+  redirectUri: process.env.KICK_REDIRECT_URI,
+  scopes: ['user:read', 'channel:read',"events:subscribe","channel:write","chat:write"] // Puedes agregar o quitar scopes según tus necesidades
 });
-const commands = {
-    '!help': 'Available commands: !help, !ping',
-    '!ping': 'Pong! 🏓',
-    "!streamtitle": "!streamtitle <title>",
-};
-// Start webhook server and subscribe to events
-async function init() {
-    let result = null;
-    try {
-    const startwebhook = await client.startWebhookServer();
-    
-    // Subscribe to all available events
-    const subscription = await client.subscribeToEvents([
-        'chat.message.sent',
-        'channel.followed',
-        'channel.subscription.new',
-        'channel.subscription.renewal',
-        'channel.subscription.gifts'
-    ]);
-    
-    result = { startwebhook, subscription };
-    initializeEvents(client);
-    console.log('Bot is ready!', result);
-    }   catch (error) {
-        console.error('Error starting webhook server:', error);
-        result = error;
-    }
-    return result;
-}
+// Ruta para iniciar el flujo de autenticación (login)
+app.get('/auth/login', async (req, res) => {
+  try {
+    // Obtiene la URL de autorización, estado y código verificador (PKCE)
+    const { url, state, codeVerifier } = await kickAuth.getAuthorizationUrl();
 
-// Listen for events
+    // Guarda el state y el codeVerifier en la sesión
+    req.session.state = state;
+    req.session.codeVerifier = codeVerifier;
 
-async function modifytittle(title="dev in stream test!"){
-    try {
-        await client.updateChannel({
-            streamTitle: title
-        });
-        console.log('Channel title updated successfully!');
-        const channel = await client.getChannels(['123', '456', '789']);
-        // Search all categories
-        const allCategories = await client.searchCategories();
+    // Redirige al usuario a la página de login de Kick.com
+    res.redirect(url);
+  } catch (error) {
+    console.error('Error iniciando el flujo de autenticación:', error);
+    res.status(500).send('Error iniciando el flujo de autenticación');
+  }
+});
 
-        console.log("channel", channel);
-        console.log("allCategories", allCategories);
-    } catch (error) {
-        console.error('Error updating channel title:', error);
+// Ruta de callback (redirección tras autenticarse en Kick.com)
+app.get('/auth/callback', async (req, res) => {
+  try {
+    const { code, state } = req.query;
+
+    // Verifica que el parámetro "state" coincida con el almacenado en la sesión
+    if (state !== req.session.state) {
+      return res.status(400).send('Parámetro state inválido');
     }
-}
-init();
-//works categoryId
-function initializeEvents(client) {
-    client.on('chatMessage', async (message) => {
-        const command = message.content.toLowerCase();
-        console.log("raw message", message);
-        if (commands[command]) {
-            await client.sendChatMessage({
-                content: commands[command],
-                type: 'bot'
-            });
-        }
-    });
-    
-    
-    client.on('channelFollowed', data => {
-        console.log(`New follower: ${data.follower.username}!`);
-    });
-    
-    client.on('subscriptionNew', data => {
-        console.log(`New sub: ${data.subscriber.username}!`);
-    });
-    client.on('subscriptionRenewal', async (data) => {
-        await client.sendChatMessage({
-            content: `Thanks for resubbing, ${data.subscriber.username}! 💜`,
-            type: 'bot'
-        });
-    });
-    
-    client.on('subscriptionGifts', async (data) => {
-        await client.sendChatMessage({
-            content: `Thanks ${data.gifter.username} for gifting ${data.giftees.length} subs! 🎁`,
-            type: 'bot'
-        });
-    });
-    client.on('error', error => {
-        console.error('Subscription error:', error);
-    });
-}
-async function sendMessage(message) {
-    try {
-        await client.sendChatMessage({
-            content: message,
-        });
-    } catch (error) {
-            console.error('Unknown error:', error.message);
+
+    // Intercambia el código por los tokens de acceso y refresco
+    const tokens = await kickAuth.getAccessToken(
+      code.toString(),
+      req.session.codeVerifier
+    );
+
+    // Almacena los tokens en la sesión (asegúrate de almacenarlos de forma segura en producción)
+    req.session.accessToken = tokens.access_token;
+    req.session.refreshToken = tokens.refresh_token;
+
+    res.redirect('/dashboard');
+  } catch (error) {
+    console.error('Error en callback:', error);
+    res.status(500).send('Fallo en la autenticación');
+  }
+});
+
+// Ruta protegida: Dashboard (acceso solo para usuarios autenticados)
+app.get('/dashboard', (req, res) => {
+  if (!req.session.accessToken) {
+    return res.redirect('/auth/login');
+  }
+  res.sendFile('dashboard.html', { root: './public' });
+});
+
+// Ruta para cerrar sesión
+app.get('/auth/logout', async (req, res) => {
+  try {
+    // Si existe un token de acceso, revoca el token
+    if (req.session.accessToken) {
+      await kickAuth.revokeToken(req.session.accessToken);
     }
-}
-// crear un string corto aleatorio
-const randomString = () => {
-    return Math.random().toString(36).substring(2, 15);
-};
-setTimeout( async () => {
-    modifytittle("dev in stream test!");
-}, 1000);
-setTimeout( async () => {
-    await sendMessage("!streamtitle");
-}, 2000);
+    // Destruye la sesión y redirige a la página principal
+    req.session.destroy(() => {
+      res.redirect('/');
+    });
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+    res.status(500).send('Error al cerrar sesión');
+  }
+});
+app.get('/api/token', (req, res) => {
+    if (!req.session.accessToken) {
+      return res.status(401).json({ error: 'No hay token de acceso disponible. Por favor, inicia sesión.' });
+    }
+    res.json({ accessToken: req.session.accessToken });
+  });
+
+// Ruta para refrescar el token de acceso
+app.post('/api/refresh-token', async (req, res) => {
+  try {
+    // Verifica si hay un refresh token disponible
+    if (!req.session.refreshToken) {
+      return res.status(401).json({ error: 'No hay refresh token disponible. Por favor, inicia sesión nuevamente.' });
+    }
+
+    // Utiliza el refresh token para obtener un nuevo access token
+    const tokens = await kickAuth.refreshToken(req.session.refreshToken);
+
+    // Actualiza los tokens en la sesión
+    req.session.accessToken = tokens.access_token;
+    req.session.refreshToken = tokens.refresh_token;
+
+    // Devuelve el nuevo access token
+    res.json({ accessToken: tokens.access_token });
+  } catch (error) {
+    console.error('Error al refrescar el token:', error);
+    // Si hay un error con el refresh token, redirige al login
+    req.session.destroy();
+    res.status(401).json({ error: 'Sesión expirada. Por favor, inicia sesión nuevamente.' });
+  }
+});
+/* app.get('/api/bot', (req, res) => {
+    if (!req.session.accessToken) {
+      return res.status(401).json({ error: 'No hay token de acceso disponible. Por favor, inicia sesión.' });
+    }
+    const token = req.session.accessToken;
+    createclient(token);
+    res.json({ accessToken: req.session.accessToken });
+  }); */
+// Ruta pública para la página de inicio
+app.use(express.static('public'));
+
+// Inicia el servidor
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
