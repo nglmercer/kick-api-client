@@ -69,38 +69,55 @@ class KickAPI {
     // Token refresh method
     async refreshToken() {
         try {
-            const response = await fetch('/api/refresh-token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
+            // Check if we're already refreshing to prevent multiple simultaneous refresh requests
+            if (this._refreshingPromise) {
+                return await this._refreshingPromise;
+            }
+            
+            // Create a new refresh promise
+            this._refreshingPromise = (async () => {
+                console.log('Refreshing access token...');
+                const response = await fetch('/api/refresh-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    // If refresh fails, redirect to login
+                    console.error('Token refresh failed with status:', response.status);
+                    window.location.href = '/auth/login';
+                    return false;
                 }
-            });
-            
-            if (!response.ok) {
-                // If refresh fails, redirect to login
-                window.location.href = '/auth/login';
+                
+                const data = await response.json();
+                if (data && data.accessToken) {
+                    // Update token in localStorage and in the API instance
+                    window.localStorage.setItem('accessToken', data.accessToken);
+                    this.token = data.accessToken;
+                    this.defaultHeaders = {
+                        'Authorization': `Bearer ${this.token}`,
+                        'Content-Type': 'application/json'
+                    };
+                    console.log('Token refreshed successfully');
+                    return true;
+                }
+                console.error('Token refresh response did not contain a new access token');
                 return false;
-            }
+            })();
             
-            const data = await response.json();
-            if (data && data.accessToken) {
-                // Update token in localStorage and in the API instance
-                window.localStorage.setItem('accessToken', data.accessToken);
-                this.token = data.accessToken;
-                this.defaultHeaders = {
-                    'Authorization': `Bearer ${this.token}`,
-                    'Content-Type': 'application/json'
-                };
-                return true;
-            }
-            return false;
+            // Get the result and clear the promise
+            const result = await this._refreshingPromise;
+            this._refreshingPromise = null;
+            return result;
         } catch (error) {
             console.error('Error refreshing token:', error);
+            this._refreshingPromise = null;
             return false;
         }
     }
-    }
-
+    
     // GET request wrapper
     async get(endpoint, customHeaders = {}) {
         return this.request(endpoint, 'GET', null, customHeaders);
@@ -256,35 +273,10 @@ async function initializeEvents() {
 
 
 // Execute API calls
-kickAPI.getCategories();
+// kickAPI.getCategories();
 initializeEvents();
 kickAPI.sendChatMessage();
 kickAPI.getChannels();
 kickAPI.updateChannel({
     streamTitle: 'test1234!'
 });
-// Function to send data to webhook server
-async function fetchserver() {
-    try {
-        fetch('https://webhook-js.onrender.com/webhook',
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    event: alleventsArray.map(event => ({
-                        name: event,
-                        version: 1
-                    }))
-                })
-            }
-        )
-    } catch (error) {
-        console.error('Error al enviar datos al servidor:', error);
-    }
-}
-
-// Uncomment to enable periodic calls to the server
-// setInterval(fetchserver, 4000);
-// setTimeout(fetchserver, 1000);

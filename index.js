@@ -3,7 +3,6 @@ import express from 'express';
 import session from 'express-session';
 import dotenv from 'dotenv';
 import { KickAuthClient } from 'kick-auth';
-//import { createclient } from './index.js';
 dotenv.config();
 
 const app = express();
@@ -112,8 +111,8 @@ app.post('/api/refresh-token', async (req, res) => {
     }
 
     // Utiliza el refresh token para obtener un nuevo access token
+    console.log('Tokens actualizados:', req.session.refreshToken);
     const tokens = await kickAuth.refreshToken(req.session.refreshToken);
-
     // Actualiza los tokens en la sesión
     req.session.accessToken = tokens.access_token;
     req.session.refreshToken = tokens.refresh_token;
@@ -127,14 +126,6 @@ app.post('/api/refresh-token', async (req, res) => {
     res.status(401).json({ error: 'Sesión expirada. Por favor, inicia sesión nuevamente.' });
   }
 });
-/* app.get('/api/bot', (req, res) => {
-    if (!req.session.accessToken) {
-      return res.status(401).json({ error: 'No hay token de acceso disponible. Por favor, inicia sesión.' });
-    }
-    const token = req.session.accessToken;
-    createclient(token);
-    res.json({ accessToken: req.session.accessToken });
-  }); */
 // Ruta pública para la página de inicio
 app.use(express.static('public'));
 
