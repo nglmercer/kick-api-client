@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Auth Component Example</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+        .logo {
+            max-width: 40px;
+            margin-right: 15px;
+        }
+        h1 {
+            color: #53b13b;
+            margin: 0;
+            font-size: 24px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background-color: #eee;
+            background-size: cover;
+            background-position: center;
+        }
+        .logout-btn {
+            margin-left: 15px;
+            padding: 8px 15px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .logout-btn:hover {
+            background-color: #d32f2f;
+        }
+        .login-btn {
+            padding: 8px 15px;
+            background-color: #53b13b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .login-btn:hover {
+            background-color: #449a31;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .demo-controls {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+        }
+        .demo-controls h2 {
+            margin-top: 0;
+            color: #53b13b;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn {
+            padding: 10px 15px;
+            background-color: #53b13b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            background-color: #449a31;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <img src="https://kick.com/favicon.ico" alt="Kick Logo" class="logo">
+            <h1>Kick API Dashboard</h1>
+        </div>
+        <div id="auth-container">
+            <!-- UserAuthComponent will render here -->
+        </div>
+    </header>
+    
+    <div class="container">
+        <h2>UserAuthComponent Demo</h2>
+        <p>This page demonstrates how to use the UserAuthComponent to manage user authentication state in the header.</p>
+        
+        <div class="demo-controls">
+            <h2>Demo Controls</h2>
+            <p>Use these controls to simulate different user states:</p>
+            
+            <div class="form-group">
+                <label for="username-input">Username:</label>
+                <input type="text" id="username-input" placeholder="Enter username">
+            </div>
+            
+            <div class="form-group">
+                <label for="avatar-input">Avatar URL:</label>
+                <input type="text" id="avatar-input" placeholder="Enter avatar URL">
+            </div>
+            
+            <button class="btn" id="simulate-login-btn">Simulate Login</button>
+            <button class="btn" id="simulate-logout-btn">Simulate Logout</button>
+            <button class="btn" id="update-avatar-btn">Update Avatar Only</button>
+        </div>
+    </div>
+
+    <!-- Include the UserAuthComponent script -->
+    <script src="/components/UserAuthComponent.js"></script>
+    
+    <script>
+        // Initialize the UserAuthComponent when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Create a new instance of UserAuthComponent
+            const userAuth = new UserAuthComponent({
+                // Optional: Override default configuration
+                avatarElementId: 'user-avatar',
+                usernameElementId: 'username',
+                authContainerId: 'auth-container',
+                loginButtonText: 'Iniciar sesión con Kick',
+                logoutButtonText: 'Cerrar sesión',
+                defaultAvatarUrl: 'https://via.placeholder.com/40',
+                // Optional: Provide callbacks
+                onLogin: () => console.log('User logged in'),
+                onLogout: () => console.log('User logged out')
+            });
+            
+            // Demo controls
+            const simulateLoginBtn = document.getElementById('simulate-login-btn');
+            const simulateLogoutBtn = document.getElementById('simulate-logout-btn');
+            const updateAvatarBtn = document.getElementById('update-avatar-btn');
+            const usernameInput = document.getElementById('username-input');
+            const avatarInput = document.getElementById('avatar-input');
+            
+            // Simulate login
+            simulateLoginBtn.addEventListener('click', () => {
+                const username = usernameInput.value || 'DemoUser';
+                const avatarUrl = avatarInput.value || 'https://via.placeholder.com/40/53b13b/ffffff?text=U';
+                
+                // Store a demo access token
+                window.localStorage.setItem('accessToken', 'demo-access-token');
+                
+                // Update user profile
+                userAuth.setUserProfile({
+                    username: username,
+                    avatarUrl: avatarUrl
+                });
+            });
+            
+            // Simulate logout
+            simulateLogoutBtn.addEventListener('click', () => {
+                userAuth.logout();
+                // Prevent actual page navigation for the demo
+                setTimeout(() => {
+                    window.location.href = window.location.href;
+                }, 100);
+            });
+            
+            // Update avatar only
+            updateAvatarBtn.addEventListener('click', () => {
+                const avatarUrl = avatarInput.value || 'https://via.placeholder.com/40/ff5722/ffffff?text=U';
+                userAuth.setUserAvatarUrl(avatarUrl);
+            });
+        });
+    </script>
+</body>
+</html>

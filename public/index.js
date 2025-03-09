@@ -271,11 +271,14 @@ async function initializeEvents() {
     }
 }
 
-
+const datenow = () => {
+    return new Date();
+}
+console.log("datenow", datenow(),new Date());
 // Execute API calls
 // kickAPI.getCategories();
 initializeEvents();
-kickAPI.sendChatMessage();
+kickAPI.sendChatMessage("hola esta es la hora "+datenow());
 kickAPI.getChannels();
 kickAPI.updateChannel({
     streamTitle: 'test1234!'
