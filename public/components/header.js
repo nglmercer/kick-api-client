@@ -1,4 +1,5 @@
 // header.js
+import { kickAPI, initializeEvents, GetAvatarUrlKick } from '../api/kickapi.js';
 export class HeaderComponent {
     constructor(containerId) {
       this.container = document.getElementById(containerId);
@@ -36,6 +37,7 @@ export class HeaderComponent {
     
     // Set user information and update state
     setUser(username, pictureUrl) {
+        console.log("username", username, "pictureUrl", pictureUrl);
       this.username = username;
       this.userPicture = pictureUrl;
       this.isLoggedIn = true;
@@ -57,6 +59,7 @@ export class HeaderComponent {
       // In a real app, this would trigger authentication
       // For demo purposes, we'll use mock data
       this.setUser(username, pictureUrl);
+      
     }
     
     // Logout handler
@@ -103,6 +106,31 @@ export class HeaderComponent {
   
   // Initialize the header when DOM is loaded
     const header = new HeaderComponent('header-container');
+    async function getUser() {
+      try {
+        const data = await kickAPI.getUser();
+        return data;
+      } catch (error) {
+        console.log(error, 'channels-result');
+        return null;
+      }
+    }
+    function findValidArray(arrays, requiredKeys) {
+        if (!arrays) return null;
+        return arrays.find(arr => 
+            requiredKeys.every(key => key in arr)
+        ) || null;
+    }
     
+async function changeuserdata(data) {
+    data = await data;
+    
+    const user = findValidArray(data.data, ['name', 'profile_picture']);
+    const profilePic = await GetAvatarUrlKick.getProfilePic(user.name);
+    console.log("profilePic", profilePic);
+    header.setUser(user.name, profilePic);
+}
+initializeEvents();
+changeuserdata(getUser());
     // Expose the header instance to the global scope for debugging/testing
     window.headerComponent = header;

@@ -1,6 +1,13 @@
 // WebSocket connection
 const socket = new WebSocket("wss://webhook-js.onrender.com/ws");
-
+function parseIfJson(str) {
+  try {
+      const parsed = JSON.parse(str);
+      return typeof parsed === "object" && parsed !== null ? parsed : str;
+  } catch (e) {
+      return str; // No es un JSON válido, devolver el string original
+  }
+}
 socket.onopen = () => {
   console.log("Conectado al WebSocket");
   socket.send(JSON.stringify({ message: "Hola desde el cliente!" }));
