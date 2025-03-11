@@ -8,32 +8,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Example data
   const exampleMessages = [
     {
-      content: "Hello everyone! How's it going? KappaHD",
+      content: "Hola [emote:1730752:emojiAngel] mundo",
       type: "message",
       sender: {
-        username: "user123",
+        username: "melserngi",
         slug: "CoolUser",
         indentity: {
           color: "#FF5733"
         }
       },
       emotes: [
-        { code: "KappaHD", url: "https://static-cdn.jtvnw.net/emoticons/v2/25/default/dark/1.0" }
+        {
+          id: "1730752",
+          name: "emojiAngel",
+        }
       ]
     },
     {
-      content: "Just hanging out LUL watching the stream",
+      content: "Hola [emote:1730752:emojiAngel] mundo",
       type: "message",
       sender: {
-        username: "streamer_fan",
+        username: "melserngi",  
         slug: "StreamerFan",
         indentity: {
           color: "#33FF57"
         }
       },
-      emotes: [
-        { code: "LUL", url: "https://static-cdn.jtvnw.net/emoticons/v2/25/default/dark/1.0" }
-      ]
+      emotes: getEmoteUrl("Hola [emote:1730752:emojiAngel] mundo").emotes
     }
   ];
 
@@ -82,3 +83,37 @@ export const GetAvatarUrlKick = {
     return `https://placehold.co/600x400?text=${username}`;
   }
 };
+// https://files.kick.com/emotes/1730752/fullsize"
+function getEmoteUrl(message = "Hola [emote:1730752:emojiAngel] mundo") {
+  const regex = /\[emote:(\d+):([a-zA-Z0-9]+)\]/g;
+  const emotes = [];
+  let html = message;
+  let content = message;
+
+  // Extraer todos los emotes y construir los resultados
+  let match;
+  while ((match = regex.exec(message)) !== null) {
+    const id = match[1];
+    const name = match[2];
+    const imageUrl = `https://files.kick.com/emotes/${id}/fullsize`;
+
+    // Agregar el emote al array de emotes
+    emotes.push({ id, name, url: imageUrl });
+
+    // Reemplazar en el HTML con la etiqueta <img>
+    html = html.replace(match[0], `<img src="${imageUrl}" alt="${name}">`);
+
+    // Reemplazar en el content con un espacio (o nada) para eliminar el emote
+    content = content.replace(match[0], " ");
+  }
+
+  // Limpiar el content para eliminar espacios múltiples
+  content = content.replace(/\s+/g, " ").trim();
+
+  return {
+    html,           // Mensaje con etiquetas <img> para los emotes
+    content,       // Mensaje sin emotes, solo texto limpio
+    emotes         // Array con los emotes encontrados
+  };
+}
+console.log(getEmoteUrl("Hola [emote:1730752:emojiAngel] mundo"));

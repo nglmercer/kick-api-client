@@ -1,0 +1,47 @@
+{
+    "likesStore": [
+        {
+            "id": 1,
+            "name": "Like 1",
+            "type": "number",
+            "eventype": "like",
+            "value": 1,
+            "actions": [
+                1,
+                2,
+                3
+            ]
+        }
+    ],
+    "chatStore": [
+        {
+            "id": 1,
+            "name": "Chat 1",
+            "type": "string",
+            "eventype": "chat",
+            "value": "!command",
+            "actions": []
+        }
+    ],
+    "giftStore": [
+        {
+            "id": 1,
+            "name": "Gift 1",
+            "type": "string",
+            "eventype": "gift",
+            "value": 5565,
+            "actions": []
+
+        }
+    ],
+    "bitsStore": [
+        {
+            "id": 1,
+            "name": "Bits 1",
+            "type": "number",
+            "eventype": "bits",
+            "value": 1,
+            "actions": []
+        }
+    ]
+}
