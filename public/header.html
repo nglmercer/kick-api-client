@@ -61,7 +61,13 @@
       </div> -->
     </section>
   </main>
-  <script>
+  <script type="module">
+    import { databases, IndexedDBManager, DBObserver, getAllDataFromDatabase } from './store/indexdb.js';
+    import { flattenObject, unflattenObject } from './utils/utils.js';
+    const dbObserver = new DBObserver();
+    const commandsDB = databases.commandsDB;
+    const commandStore = new IndexedDBManager(commandsDB, dbObserver);
+    console.log("commandStore",commandStore);
     const userModal = document.querySelector('#userModal');
     // userModal.show();
     // userModal.hide();
@@ -73,7 +79,13 @@
             class: 'btn btn-sm btn-outlined save-btn',
             callback: () => {
               const newdata = getModaldata();
-                console.log('Save clicked', newdata);
+              console.log('Save clicked', newdata);
+              if (validateModaldata(newdata)) {
+                const parsednewdata = unflattenObject(newdata);
+                console.log("parsednewdata",parsednewdata);
+              //  commandStore.saveData(newdata);
+              //  userModal.hide();
+              }
             }
         }
         ,
@@ -90,18 +102,27 @@
       const command_name = document.querySelector('#command_name');
       const command_trigger = document.querySelector('#command_trigger');
       const command_value = document.querySelector('#command_value');
-      const allarguments = {
+      const formelements = {
         "command_name": command_name,
         "command_trigger": command_trigger,
         "command_value": command_value
       }
-      Object.keys(allarguments).forEach(key => {
-        allvalues[key] = allarguments[key].getInputValues();
+      Object.keys(formelements).forEach(key => {
+        allvalues[key] = formelements[key].getInputValues();
         // format form with resetInputValues
-      //  allarguments[key].resetInputValues();
+        //  formelements[key].resetInputValues();
       });
-      console.log(allarguments);
+      console.log(formelements);
       return { ...allvalues };
+  }
+  function validateModaldata(data) {
+      let isValid = true;
+      Object.keys(data).forEach(key => {
+          if (data[key] === null || data[key] === undefined || data[key] === '') {
+              isValid = false;
+          }
+      });
+      return isValid;
   }
   </script>
 </body>
