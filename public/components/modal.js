@@ -589,7 +589,7 @@ if (!customElements.get('custom-input')) {
             `;
           
           case 'radio':
-            const radioOptions = JSON.parse(options);
+            const radioOptions = safeParse(options);
             return radioOptions.map(option => `
               <label>
                 <input
@@ -604,7 +604,7 @@ if (!customElements.get('custom-input')) {
                 ${option.label}
               </label>
             `).join('');
-          
+              
             default:
               return `
                 <input
@@ -749,3 +749,39 @@ if (!customElements.get('custom-input')) {
   
     customElements.define('custom-input', CustomInput);
   }
+  function safeParse(value) {
+    try {
+        // Si ya es un array u objeto, lo devolvemos tal cual
+        if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
+            return value;
+        }
+
+        // Si es un string que empieza con { o [, intentamos parsearlo
+        if (typeof value === 'string' && (value.trim().startsWith('{') || value.trim().startsWith('['))) {
+            try {
+                return JSON.parse(value); // Intento normal
+            } catch (error) {
+                // Si falla, intentamos corregirlo
+                const fixedJson = value
+                    .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":') // Poner comillas en claves
+                    .replace(/:\s*'([^']+)'/g, ': "$1"'); // Reemplazar comillas simples por dobles en valores
+
+                return JSON.parse(fixedJson); // Reintento con JSON corregido
+            }
+        }
+
+        // Si es otro tipo de dato (número, booleano, etc.), lo devolvemos sin cambios
+        return value;
+    } catch (error) {
+        console.error("Error al parsear JSON:", error, "Valor recibido:", value);
+        return value; // Retorna el valor original si no se puede parsear
+    }
+}
+
+// Ejemplo de prueba:
+console.log(safeParse("[{value: '123', label: '123'}, {value: '1234', label: '1234'}]"));
+
+console.log(safeParse('{"key": "value"}')); // Devuelve un objeto
+console.log(safeParse('not a json')); // Devuelve el string original
+console.log(safeParse(42)); // Devuelve 42 (número)
+console.log(safeParse({ key: "value" })); // Devuelve el objeto original

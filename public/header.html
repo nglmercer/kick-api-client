@@ -20,20 +20,39 @@
   <dialog-container id="userModal" style="padding: 4px; margin: 4px;">
     <div class="form commands" id="form_command">
       <div class="row">
+        <span id="command-label" lang="en">nombre de la evento</span>
           <custom-input
           type="text"
           id="command_name"
           name="command_name"
           placeholder="{{command.name}}"
           ></custom-input>
-          <span id="command-label" lang="en">nombre de la comando</span>
+      </div>
+      <div class="row">
+        <span id="command-label" lang="en">Active trigger </span>
+        <custom-input
+          type="radio"
+          id="command_trigger"
+          name="command_trigger"
+          options='[{"value": "default", "label": "any comment"}, {"value": "comando", "label": "commenting command"}]'
+          value="true"
+          ></custom-input>
+      </div>
+      <div class="row">
+        <span id="command-label" lang="en">comando</span>
+          <custom-input
+          type="text"
+          id="command_value"
+          name="command_value"
+          placeholder="{{command.value}}"
+          ></custom-input>
       </div>
 
     </div>
     <custom-dialog id="userModal_dialog"
     style="border: 0px solid red;"
     theme="dark">
-  </custom-dialog>
+  </ctom-dialog>
   </dialog-container>
     <section class="content">
       <button type="button" class="btn btn-sm btn-outlined" > Button </button>
@@ -47,6 +66,43 @@
     // userModal.show();
     // userModal.hide();
     userModal.show();
+    const userModal_dialog = document.querySelector('#userModal_dialog');
+    userModal_dialog.options = [
+        {
+            label: 'Save',
+            class: 'btn btn-sm btn-outlined save-btn',
+            callback: () => {
+              const newdata = getModaldata();
+                console.log('Save clicked', newdata);
+            }
+        }
+        ,
+        {
+            label: 'Cancel',
+            class: 'btn btn-sm btn-outlined save-btn',
+            callback: () => {
+                console.log('Cancel clicked');
+            }
+        }
+    ]
+    function getModaldata() {
+      let allvalues = [];
+      const command_name = document.querySelector('#command_name');
+      const command_trigger = document.querySelector('#command_trigger');
+      const command_value = document.querySelector('#command_value');
+      const allarguments = {
+        "command_name": command_name,
+        "command_trigger": command_trigger,
+        "command_value": command_value
+      }
+      Object.keys(allarguments).forEach(key => {
+        allvalues[key] = allarguments[key].getInputValues();
+        // format form with resetInputValues
+      //  allarguments[key].resetInputValues();
+      });
+      console.log(allarguments);
+      return { ...allvalues };
+  }
   </script>
 </body>
 </html>
