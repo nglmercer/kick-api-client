@@ -76,13 +76,14 @@
     </style>
 </head>
 <body>
+    <custom-popup id="server-popup" class="material-symbols-rounded">
+    </custom-popup>
+    <div id="commandFormContainer"></div>
     <div class="container">
         <h1>Comandos para Stream Chat</h1>
         
         <div class="actions">
             <button id="addCommand">Agregar Comando</button>
-            <button id="updateRandomCommand">Actualizar Comando</button>
-            <button id="clearCommands">Limpiar Comandos</button>
         </div>
         
         <div class="command-grid" id="commandContainer"></div>
@@ -94,15 +95,61 @@
     </div>
     
     <script type="module">
-        import { databases, IndexedDBManager, DBObserver, getAllDataFromDatabase } from '../store/indexdb.js';
-        const dbObserver = new DBObserver();
+        import { databases, IndexedDBManager, globalEmitter, getAllDataFromDatabase } from '../store/indexdb.js';
+        import { initcommandForm } from './chatform.js';
+        import './modal.js';
         const commandsDB = databases.commandsDB;
-        const commandStore = new IndexedDBManager(commandsDB, dbObserver);
+        const commandStore = new IndexedDBManager(commandsDB, "dbObserver");
         import CommandCardComponent from './commandCardComponent.js';
+        const hoverStyles = `
+            <style>
+                .dropdown-item {
+                    background: #222c3a;
+                    border-radius: 8px;
+                    padding: 4px 8px;
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+                    cursor: pointer;
+                    height: 48px;
+                    font-size: 12pt;
+                    width: 100%;
+                }
+                .dropdown-item:hover {
+                    background: #2e3e53;
+                }
+            </style>
+            `;
         async function getCommands() {
             const commands = await commandStore.getAllData();
             console.log("commands",commands);
             return commands;
+        }
+        function setPopupOptions(popupOptions, popupId = "custom-popup"){
+            const popupElement = document.querySelector(popupId);
+            popupElement.options = popupOptions;
+        }
+        function returnMenuOption(idName, textName, iconName, callback) {
+            return  {
+            id: idName,
+            text: textName,
+            icon: iconName,
+            callback: () => {
+                callback();
+            }
+            }
+        }
+
+        function openPopup(element, popupId = "custom-popup") {
+            const popupElement = document.querySelector(popupId);
+            if (!popupElement) return;
+            if (typeof element === "string") {
+                const buttonElement  = document.querySelector(element);
+                    popupElement.showAtElement(buttonElement);
+            } else {
+                const buttonElement = element;
+                popupElement.showAtElement(buttonElement);
+            }
         }
         // Datos de ejemplo para los comandos
         const sampleCommands = [
@@ -146,12 +193,12 @@
         // Referencias a elementos del DOM
         const commandContainer = document.getElementById('commandContainer');
         const addCommandBtn = document.getElementById('addCommand');
-        const updateRandomCommandBtn = document.getElementById('updateRandomCommand');
-        const clearCommandsBtn = document.getElementById('clearCommands');
         const logEntries = document.getElementById('logEntries');
         
         // Función para agregar una entrada al registro de eventos
         function logEvent(message, data = null) {
+            console.log("logEvent",message,data);
+        //    return;
             const entry = document.createElement('div');
             entry.className = 'log-entry';
             
@@ -167,11 +214,8 @@
         }
         
         // Función para crear un comando con datos aleatorios
-        function createRandomCommand(commandData) {
-            if (!commandData) {
-                const randomIndex = Math.floor(Math.random() * sampleCommands.length);
-                commandData = { ...sampleCommands[randomIndex] };
-            }
+        function createCardCommand(commandData) {
+            if (!commandData) return;
             // Crear el componente de comando
             const commandCard = new CommandCardComponent();
             commandCard.setData(commandData);
@@ -201,55 +245,73 @@
                     position: { x: e.detail.x, y: e.detail.y },
                     data: e.detail.data
                 });
+                console.log("e.details",e.detail, e);
+                const baseOptions = [
+                    returnMenuOption("update_command", "Actualizar Comando", "edit", () => updateRandomCommand(e.detail.data)),
+                    returnMenuOption("clear_commands", "Limpiar Comandos", "delete", () => clearCommands(e.detail.data)),
+                ];
+                const popupOptions = baseOptions.map(option => ({
+                    html: `${hoverStyles}
+                        <div class="dropdown-item">
+                            <span class="material-symbols-rounded">${option.icon}</span>
+                            <span class="default-font">${option.text}</span>
+                        </div>
+                    `,
+                    callback: (e) => option.callback(e)
+                }));
+                setPopupOptions(popupOptions);
+                openPopup(e.detail.target);
             });
             
             return commandCard;
         }
-        
+        function updateRandomCommand(data) {
+            console.log("updateRandomCommand",data);
+            const commandForm = initcommandForm('commandFormContainer');
+            commandForm.setFormData(data);
+        }
+        function clearCommands(data) {
+            console.log("clearCommands",data);
+            commandStore.deleteData(data.id);
+        }
         // Event listener para agregar un comando
         addCommandBtn.addEventListener('click', () => {
-            const commandCard = createRandomCommand();
-            commandContainer.appendChild(commandCard);
-            logEvent('Comando agregado', commandCard.getData());
+            const commandForm = initcommandForm('commandFormContainer');
         });
-        
-        // Event listener para actualizar un comando aleatorio
-        updateRandomCommandBtn.addEventListener('click', () => {
-            const commands = commandContainer.querySelectorAll('command-card');
-            
-            if (commands.length === 0) {
-                logEvent('No hay comandos para actualizar');
-                return;
-            }
-            
-            const randomCommand = commands[0];
-            const newName = `Comando actualizado ${Date.now()}`;
-            
-            randomCommand.setData({
-                name: newName,
-                description: 'Este comando ha sido actualizado'
-            });
-            
-            logEvent('Comando actualizado', randomCommand.getData());
-        });
-        
-        // Event listener para limpiar todos los comandos
-        clearCommandsBtn.addEventListener('click', () => {
-            commandContainer.innerHTML = '';
-            logEvent('Todos los comandos han sido eliminados');
-        });
-        
         // Inicializar con algunos comandos de ejemplo
         window.addEventListener('DOMContentLoaded', async () => {
             // Agregar algunos comandos iniciales
             const allCommands = await getCommands();
             console.log("allCommands",allCommands);
             allCommands.forEach(command => {
-                const commandCard = createRandomCommand(command);
+                const commandCard = createCardCommand(command);
                 commandContainer.appendChild(commandCard);
             });
             
             logEvent('Aplicación inicializada con 5 comandos');
+        });
+        globalEmitter.on('*', (source, action, data) => {
+            console.log("globalEmitter", source, action, data);
+            switch (action) {
+                case 'update':
+                    logEvent('Comando actualizado', data);
+                    break;
+                case 'delete':
+                    logEvent('Comando eliminado', data);
+                    break;
+                case 'clear':
+                    logEvent('Todos los comandos han sido eliminados');
+                    break;
+                case 'open':
+                    logEvent('Base de datos abierta', data);
+                    break;
+                case 'save':
+                    logEvent('Comando guardado', data);
+                    break;
+                default:
+                console.log(`${source} emitted ${action} with data:`, data);
+
+            }
         });
     </script>
 </body>

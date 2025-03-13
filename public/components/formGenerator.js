@@ -3,7 +3,7 @@
  * This allows creating different forms (commands, gifts, etc.) with the same structure
  * but different field names and validation rules
  */
-import { databases, IndexedDBManager, DBObserver, getAllDataFromDatabase } from '../store/indexdb.js';
+import { databases, IndexedDBManager, getAllDataFromDatabase } from '../store/indexdb.js';
 
 class FormGenerator {
   /**
@@ -22,7 +22,6 @@ class FormGenerator {
     this.dbName = config.dbName;
     this.fields = config.fields;
     this.validation = config.validation || {};
-    this.dbObserver = null;
     this.dbStore = null;
     this.formElements = {};
     this.savecallback = config.savecallback;
@@ -33,13 +32,12 @@ class FormGenerator {
    * @returns {IndexedDBManager} The database store instance
    */
   initDatabase() {
-    this.dbObserver = new DBObserver();
     const dbConfig = databases[this.dbName];
     if (!dbConfig) {
       console.error(`Database ${this.dbName} not found in databases configuration`);
       return null;
     }
-    this.dbStore = new IndexedDBManager(dbConfig, this.dbObserver);
+    this.dbStore = new IndexedDBManager(dbConfig, "dbObserver");
     return this.dbStore;
   }
 

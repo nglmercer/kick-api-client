@@ -91,7 +91,8 @@ class CommandCardComponent extends HTMLElement {
       detail: {
         data: this._data,
         x: event.clientX,
-        y: event.clientY
+        y: event.clientY,
+        target: event.target
       }
     }));
   }

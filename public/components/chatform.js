@@ -3,10 +3,9 @@
  * This file creates a form for managing command triggers using the FormGenerator class
  */
 import { FormGenerator } from './formGenerator.js';
-import { databases, IndexedDBManager, DBObserver, getAllDataFromDatabase } from '../store/indexdb.js';
-const dbObserver = new DBObserver();
+import { databases, IndexedDBManager, getAllDataFromDatabase } from '../store/indexdb.js';
 const commandsDB = databases.commandsDB;
-const commandStore = new IndexedDBManager(commandsDB, dbObserver);
+const commandStore = new IndexedDBManager(commandsDB, "dbObserver");
 /**
  * Initialize the command form
  * @param {string} containerId - ID of the container element to inject the form
@@ -69,6 +68,7 @@ function initcommandForm(containerId) {
   // Create the form generator and initialize it
   const commandForm = new FormGenerator(commandFormConfig);
   commandForm.init(containerId);
+  return commandForm;
 }
 function getModaldata(getelements = false) {
   let allvalues = [];
@@ -78,6 +78,7 @@ function getModaldata(getelements = false) {
   const form_id = document.querySelector('#form_id');
   const formelements = {
     "name": command_name,
+    "command_name": command_name,
     "command_trigger": command_trigger,
     "command_value": command_value,
     "id": form_id,
