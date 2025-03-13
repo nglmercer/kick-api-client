@@ -38,7 +38,6 @@ class CommandCardComponent extends HTMLElement {
    */
   connectedCallback() {
     this.addEventListener('contextmenu', this._handleContextMenu.bind(this));
-    document.addEventListener('click', this._handleDocumentClick.bind(this));
   }
 
   /**
@@ -46,7 +45,6 @@ class CommandCardComponent extends HTMLElement {
    */
   disconnectedCallback() {
     this.removeEventListener('contextmenu', this._handleContextMenu.bind(this));
-    document.removeEventListener('click', this._handleDocumentClick.bind(this));
   }
 
   /**
@@ -85,13 +83,7 @@ class CommandCardComponent extends HTMLElement {
    */
   _handleContextMenu(event) {
     event.preventDefault();
-    this._isContextMenuOpen = true;
-    
-    const contextMenu = this.shadowRoot.querySelector('.context-menu');
-    contextMenu.style.display = 'block';
-    contextMenu.style.left = `${event.offsetX}px`;
-    contextMenu.style.top = `${event.offsetY}px`;
-    
+    this._isContextMenuOpen = true; 
     // Dispatch context menu open event with command details
     this.dispatchEvent(new CustomEvent('command-context-menu', {
       bubbles: true,
@@ -107,12 +99,7 @@ class CommandCardComponent extends HTMLElement {
   /**
    * Handle document click to close context menu
    */
-  _handleDocumentClick(event) {
-    if (this._isContextMenuOpen && !event.composedPath().includes(this.shadowRoot.querySelector('.context-menu'))) {
-      this.shadowRoot.querySelector('.context-menu').style.display = 'none';
-      this._isContextMenuOpen = false;
-    }
-  }
+
 
   /**
    * Handle action button clicks
@@ -127,10 +114,6 @@ class CommandCardComponent extends HTMLElement {
         data: this._data
       }
     }));
-    
-    // Close context menu
-    this.shadowRoot.querySelector('.context-menu').style.display = 'none';
-    this._isContextMenuOpen = false;
   }
 
   /**
@@ -167,6 +150,7 @@ class CommandCardComponent extends HTMLElement {
           padding: 12px 16px;
           background-color: #252525;
           border-bottom: 1px solid #444;
+          justify-content: space-between;
         }
         
         .command-icon {
@@ -210,28 +194,6 @@ class CommandCardComponent extends HTMLElement {
           margin-top: 8px;
         }
         
-        .context-menu {
-          display: none;
-          position: absolute;
-          background-color: #333;
-          border-radius: 4px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-          z-index: 1000;
-          min-width: 180px;
-        }
-        
-        .context-menu-item {
-          padding: 8px 12px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          transition: background-color 0.2s;
-        }
-        
-        .context-menu-item:hover {
-          background-color: #444;
-        }
-        
         .divider {
           height: 1px;
           background-color: #444;
@@ -249,33 +211,14 @@ class CommandCardComponent extends HTMLElement {
           background-size: contain;
         }
         
-        .icon-edit {
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e0e0e0'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E");
-        }
-        
-        .icon-delete {
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e0e0e0'%3E%3Cpath d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'/%3E%3C/svg%3E");
-        }
-        
-        .icon-execute {
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e0e0e0'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E");
-        }
-        
-        .icon-copy {
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e0e0e0'%3E%3Cpath d='M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z'/%3E%3C/svg%3E");
-        }
-        
-        .icon-details {
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e0e0e0'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'/%3E%3C/svg%3E");
-        }
       </style>
       
       <div class="command-card">
         <div class="command-header">
-          <div class="command-icon">
-            ${this._getIconContent()}
-          </div>
           <h3 class="command-name">${this._data.name || 'Command'}</h3>
+          <div class="command-icon" id="menuIcon">
+          ︙
+          </div>
         </div>
         
         <div class="command-content">
@@ -283,24 +226,6 @@ class CommandCardComponent extends HTMLElement {
           <p class="command-description">${this._data.description || 'Stream chat command'}</p>
         </div>
         
-        <div class="context-menu">
-          <div class="context-menu-item" @click="${() => this._handleAction('execute')}">
-            <span class="icon icon-execute"></span>Ejecutar
-          </div>
-          <div class="context-menu-item" @click="${() => this._handleAction('edit')}">
-            <span class="icon icon-edit"></span>Editar
-          </div>
-          <div class="context-menu-item" @click="${() => this._handleAction('copy')}">
-            <span class="icon icon-copy"></span>Copiar
-          </div>
-          <div class="context-menu-item" @click="${() => this._handleAction('details')}">
-            <span class="icon icon-details"></span>Ver detalles
-          </div>
-          <div class="divider"></div>
-          <div class="context-menu-item" @click="${() => this._handleAction('delete')}">
-            <span class="icon icon-delete"></span>Eliminar
-          </div>
-        </div>
       </div>
     `;
 
@@ -312,9 +237,12 @@ class CommandCardComponent extends HTMLElement {
         this._handleAction(action);
       });
     });
-
+    // add event listener to menuIcon command-icon menuIcon
+    this.shadowRoot.querySelector('#menuIcon').addEventListener('click', (e) => {
+      this._handleContextMenu(e);
+    });
     // Add click event to card for quick execution
-    this.shadowRoot.querySelector('.command-card').addEventListener('click', (e) => {
+    this.shadowRoot.querySelector('.command-card').addEventListener('dblclick', (e) => {
       // Don't trigger if clicking on context menu
       if (!e.composedPath().some(el => el.classList && el.classList.contains('context-menu'))) {
         this._handleAction('execute');
@@ -322,22 +250,6 @@ class CommandCardComponent extends HTMLElement {
     });
   }
 
-  /**
-   * Get icon content based on data or default
-   * @returns {string} - Icon HTML content
-   */
-  _getIconContent() {
-    if (this._data.icon) {
-      // If icon is a URL
-      if (this._data.icon.startsWith('http') || this._data.icon.startsWith('data:')) {
-        return `<img src="${this._data.icon}" alt="Command icon" style="width: 100%; height: 100%;">`;
-      }
-      // If icon is a text/emoji
-      return this._data.icon;
-    }
-    // Default icon (first letter of command name)
-    return (this._data.name || 'C').charAt(0).toUpperCase();
-  }
 }
 
 // Register the custom element

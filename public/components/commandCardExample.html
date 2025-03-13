@@ -102,31 +102,31 @@
                 name: 'Saludo',
                 command: '!hola',
                 description: 'Saluda al usuario en el chat',
-                icon: '👋'
+                id: 1
             },
             {
                 name: 'Información',
                 command: '!info',
                 description: 'Muestra información sobre el canal y horarios',
-                icon: 'ℹ️'
+                id: 2
             },
             {
                 name: 'Redes Sociales',
                 command: '!redes',
                 description: 'Muestra enlaces a todas las redes sociales',
-                icon: '🔗'
+                id: 3   
             },
             {
                 name: 'Música',
                 command: '!song',
                 description: 'Muestra la canción que está sonando actualmente',
-                icon: '🎵'
+                id: 4
             },
             {
                 name: 'Donación',
                 command: '!donate',
                 description: 'Muestra enlaces para realizar donaciones',
-                icon: '💰'
+                id: 5
             }
         ];
         
@@ -157,10 +157,7 @@
         function createRandomCommand() {
             const randomIndex = Math.floor(Math.random() * sampleCommands.length);
             const commandData = { ...sampleCommands[randomIndex] };
-            
-            // Añadir un identificador único
-            commandData.id = Date.now();
-            
+                        
             // Crear el componente de comando
             const commandCard = new CommandCardComponent();
             commandCard.setData(commandData);
@@ -211,7 +208,7 @@
                 return;
             }
             
-            const randomCommand = commands[Math.floor(Math.random() * commands.length)];
+            const randomCommand = commands[0];
             const newName = `Comando actualizado ${Date.now()}`;
             
             randomCommand.setData({
