@@ -206,6 +206,7 @@ class FormGenerator {
    */
   handleSave() {
     this.savecallback();
+    this.modal.hide();
   }
 
   /**

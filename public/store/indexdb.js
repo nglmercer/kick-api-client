@@ -229,7 +229,7 @@ const databases = {
       }
   
       const newData = { ...data, id: targetId };
-      const saveOrUpdate = data.id && data.id > 0 ? 'update' : 'save';  
+      const saveOrUpdate = (typeof data.id === 'number' && data.id >= 0) ? 'update' : 'save';
       return this.executeTransaction(this.dbConfig.store, 'readwrite', (store) => {
         return new Promise((resolve, reject) => {
           const request = store.put(newData);

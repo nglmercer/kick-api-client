@@ -231,7 +231,7 @@
                 
                 // Manejar la acción de ejecutar
                 if (e.detail.action === 'execute') {
-                    logEvent(`Ejecutando comando: ${e.detail.data.command}`);
+                    console.log("Ejecutando comando", e.detail.data);
                     // Aquí se podría implementar la lógica para ejecutar el comando
                 }
             });
@@ -288,16 +288,21 @@
                 commandContainer.appendChild(commandCard);
             });
             
-            logEvent('Aplicación inicializada con 5 comandos');
         });
         globalEmitter.on('*', (source, action, data) => {
+            /// source is dbObserver
             console.log("globalEmitter", source, action, data);
+            let Card;
             switch (action) {
                 case 'update':
                     logEvent('Comando actualizado', data);
+                    Card = getCardElement(data.id);
+                    if (Card) Card.setData(data);
                     break;
                 case 'delete':
-                    logEvent('Comando eliminado', data);
+                    Card = getCardElement(data);
+                    logEvent('Comando eliminado', data, Card);
+                    if (Card) Card.delete();
                     break;
                 case 'clear':
                     logEvent('Todos los comandos han sido eliminados');
@@ -306,6 +311,8 @@
                     logEvent('Base de datos abierta', data);
                     break;
                 case 'save':
+                    Card = createCardCommand(data);
+                    commandContainer.appendChild(Card);
                     logEvent('Comando guardado', data);
                     break;
                 default:
@@ -313,6 +320,18 @@
 
             }
         });
+        function getCardElement(number) {
+            // Intentar convertir el valor a número si es un string numérico
+            const id = typeof number === 'number' ? number : Number(number);
+
+            // Validación: debe ser un número válido y mayor o igual a 0
+            if (isNaN(id) || id < 0) return null;
+
+            // Buscar entre todos los componentes <command-card>
+            return [...document.querySelectorAll('command-card')]
+                .find(card => card.getData()?.id === id) || null;
+        }
+
     </script>
 </body>
 </html>
