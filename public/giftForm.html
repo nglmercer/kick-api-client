@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gift Form Example</title>
+  <link rel="stylesheet" href="./assets/daisyui.css">
+  <link rel="stylesheet" href="./assets/global.css">
+  <script src="./components/modal.js"></script>
+</head>
+<body>
+  <div id="header-container"></div>
+  
+  <main>
+    <section class="content">
+      <h1>Gift Form Example</h1>
+      <p>This page demonstrates the dynamic gift form component.</p>
+      
+      <!-- Container for the gift form -->
+      <div id="gift-form-container"></div>
+      
+      <!-- Button to show the form -->
+      <button type="button" class="btn btn-sm btn-outlined" id="showFormBtn">Show Gift Form</button>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initGiftForm } from './components/giftForm.js';
+    import { databases, IndexedDBManager, DBObserver } from './store/indexdb.js';
+    
+    // Make sure the gifts database is defined
+    if (!window.databases) {
+      window.databases = {};
+    }
+    
+    if (!window.databases.giftsDB) {
+      window.databases.giftsDB = { name: 'Gifts', version: 1, store: 'gifts' };
+    }
+    
+    // Initialize the gift form when the button is clicked
+    document.getElementById('showFormBtn').addEventListener('click', () => {
+      initGiftForm('gift-form-container');
+    });
+  </script>
+</body>
+</html>

@@ -441,28 +441,51 @@ if (!customElements.get('custom-input')) {
   
       connectedCallback() {
         this.render();
-        const input = this.shadowRoot.querySelector('input, textarea, select');
-        if (input) {
-          input.addEventListener('input', this.handleInputChange);
-          input.addEventListener('change', this.handleInputChange);
+        
+        // Check if this is a radio button group
+        if (this.getAttribute('type') === 'radio') {
+          // For radio buttons, we need to attach listeners to all radio inputs
+          const radioInputs = this.shadowRoot.querySelectorAll('input[type="radio"]');
+          radioInputs.forEach(radio => {
+            radio.addEventListener('change', this.handleInputChange);
+          });
+        } else {
+          // For other input types, attach to the single input element
+          const input = this.shadowRoot.querySelector('input, textarea, select');
+          if (input) {
+            input.addEventListener('input', this.handleInputChange);
+            input.addEventListener('change', this.handleInputChange);
+          }
         }
+        
         // Corregimos el manejo del evento submit
         const form = this.shadowRoot.querySelectorAll('form');
       }
     
       disconnectedCallback() {
-        const input = this.shadowRoot.querySelector('input, textarea, select');
-        if (input) {
-          input.removeEventListener('input', this.handleInputChange);
-          input.removeEventListener('change', this.handleInputChange);
+        // Check if this is a radio button group
+        if (this.getAttribute('type') === 'radio') {
+          // For radio buttons, we need to remove listeners from all radio inputs
+          const radioInputs = this.shadowRoot.querySelectorAll('input[type="radio"]');
+          radioInputs.forEach(radio => {
+            radio.removeEventListener('change', this.handleInputChange);
+          });
+        } else {
+          // For other input types, remove from the single input element
+          const input = this.shadowRoot.querySelector('input, textarea, select');
+          if (input) {
+            input.removeEventListener('input', this.handleInputChange);
+            input.removeEventListener('change', this.handleInputChange);
+          }
         }
+        
         // Limpiamos el evento submit
         const form = this.shadowRoot.querySelector('.validate-form');
       }
   
       handleInputChange(event) {
         const value = this.getInputValues();
-        this.dispatchEvent(new CustomEvent('input-change', {
+        this.dispatchEvent(new CustomEvent('change', {
           detail: {
             id: this.getAttribute('id'),
             name: this.getAttribute('name'),
@@ -521,10 +544,19 @@ if (!customElements.get('custom-input')) {
         `;
   
         // Reattach event listeners after rendering
-        const input = this.shadowRoot.querySelector('input, textarea, select');
-        if (input) {
-          input.addEventListener('input', this.handleInputChange);
-          input.addEventListener('change', this.handleInputChange);
+        if (type === 'radio') {
+          // For radio buttons, attach listeners to all radio inputs
+          const radioInputs = this.shadowRoot.querySelectorAll('input[type="radio"]');
+          radioInputs.forEach(radio => {
+            radio.addEventListener('change', this.handleInputChange);
+          });
+        } else {
+          // For other input types, attach to the single input element
+          const input = this.shadowRoot.querySelector('input, textarea, select');
+          if (input) {
+            input.addEventListener('input', this.handleInputChange);
+            input.addEventListener('change', this.handleInputChange);
+          }
         }
       }
   
@@ -625,6 +657,13 @@ if (!customElements.get('custom-input')) {
       }
   
       getInputValues() {
+        // Special handling for radio button groups
+        if (this.getAttribute('type') === 'radio') {
+          const name = this.getAttribute('name');
+          const selectedRadio = this.shadowRoot.querySelector(`input[name="${name}"]:checked`);
+          return selectedRadio ? selectedRadio.value : null;
+        }
+        
         const input = this.shadowRoot.querySelector('input, textarea, select');
         if (!input) return null;
       
@@ -639,11 +678,6 @@ if (!customElements.get('custom-input')) {
       
         if (input.tagName.toLowerCase() === 'select') {
           return input.value;
-        }
-      
-        if (input.type === 'radio') {
-          const selectedRadio = this.shadowRoot.querySelector(`input[name="${input.name}"]:checked`);
-          return selectedRadio ? selectedRadio.value : null;
         }
       
         const inputvalue = this.parseValueByType(input);
@@ -684,8 +718,8 @@ if (!customElements.get('custom-input')) {
         const value = input.value;
         switch (inputType) {
           case 'number':
-            const num = Number(value);
-            return isNaN(num) ? 0 : num * 1;
+            const num = input.value ? Number(input.value) : null;
+            return num
           case 'text':
           case 'string':
             return value;
@@ -695,6 +729,18 @@ if (!customElements.get('custom-input')) {
       }
   
       setInputValues(value) {
+        // Special handling for radio button groups
+        if (this.getAttribute('type') === 'radio') {
+          const name = this.getAttribute('name');
+          const radioToSelect = this.shadowRoot.querySelector(`input[name="${name}"][value="${value}"]`);
+          if (radioToSelect) {
+            radioToSelect.checked = true;
+            // Dispatch event when setting values programmatically
+            this.handleInputChange();
+          }
+          return;
+        }
+        
         const input = this.shadowRoot.querySelector('input, textarea, select');
         if (!input) return;
       
@@ -704,11 +750,6 @@ if (!customElements.get('custom-input')) {
           input.value = value.join('\n');
         } else if (input.tagName.toLowerCase() === 'select') {
           input.value = value;
-        } else if (input.type === 'radio') {
-          const radioToSelect = this.shadowRoot.querySelector(`input[name="${input.name}"][value="${value}"]`);
-          if (radioToSelect) {
-            radioToSelect.checked = true;
-          }
         } else {
           input.value = value;
         }
@@ -718,6 +759,17 @@ if (!customElements.get('custom-input')) {
       }
   
       resetInputValues() {
+        // Special handling for radio button groups
+        if (this.getAttribute('type') === 'radio') {
+          const radioInputs = this.shadowRoot.querySelectorAll('input[type="radio"]');
+          radioInputs.forEach(radio => {
+            radio.checked = false;
+          });
+          // Dispatch event when resetting values
+          this.handleInputChange();
+          return;
+        }
+        
         const input = this.shadowRoot.querySelector('input, textarea, select');
         if (!input) return;
   

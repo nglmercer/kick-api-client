@@ -2,15 +2,47 @@ const databases = {
     ActionsDB: { name: 'Actions', version: 1, store: 'actions' },
     eventsDB: { name: 'Events', version: 1, store: 'events' },
     commandsDB: { name: 'Commands', version: 1, store: 'commands' },
+    giftsDB : { name: 'Gifts', version: 1, store: 'gifts' },
   };
 
+  /**
+   * Class for managing IndexedDB operations
+   * @class IndexedDBManager
+   */
   class IndexedDBManager {
+    /**
+     * Creates an instance of IndexedDBManager.
+     * @param {Object} dbConfig - Configuration for the database with properties: name, version, and store
+     * @param {Object} [idbObserver] - Observer for database events
+     * @throws {Error} If dbConfig is missing or invalid
+     */
     constructor(dbConfig, idbObserver) {
+        if (!dbConfig) {
+            throw new Error('Database configuration is required. Please provide a valid dbConfig object.');
+        }
+        
+        if (!dbConfig.name || !dbConfig.version || !dbConfig.store) {
+            throw new Error('Invalid database configuration. dbConfig must contain name, version, and store properties.');
+        }
+        
         this.dbConfig = dbConfig;
         this.idbObserver = idbObserver;
         this.db = null;
     }
+
+    /**
+     * Validates that dbConfig exists before performing operations
+     * @private
+     * @throws {Error} If dbConfig is undefined
+     */
+    _validateDbConfig() {
+        if (!this.dbConfig) {
+            throw new Error('Database configuration is undefined. Make sure to initialize the IndexedDBManager with a valid dbConfig.');
+        }
+    }
+    
     async updateDataById(id, updatedData) {
+        this._validateDbConfig();
         return this.executeTransaction(this.dbConfig.store, 'readwrite', (store) => {
             return new Promise((resolve, reject) => {
                 // Convertir el id a número si es necesario y es requerido por la clave
@@ -43,7 +75,9 @@ const databases = {
             });
         });
     } 
+    
     async getDataById(id) {
+        this._validateDbConfig();
         return this.executeTransaction(this.dbConfig.store, 'readonly', (store) => {
             return new Promise((resolve, reject) => {
                 // Convertir el id a número si es necesario
@@ -69,6 +103,7 @@ const databases = {
     }
 
     async openDatabase() {
+        this._validateDbConfig();
         if (this.db) return this.db;
         
         return new Promise((resolve, reject) => {
@@ -95,6 +130,7 @@ const databases = {
     
 
     async executeTransaction(storeName, mode, callback) {
+        this._validateDbConfig();
         const db = await this.openDatabase();
         return new Promise((resolve, reject) => {
             const transaction = db.transaction([storeName], mode);
@@ -116,6 +152,7 @@ const databases = {
     }
 
     async getAllData() {
+        this._validateDbConfig();
         return this.executeTransaction(this.dbConfig.store, 'readonly', (store) => {
             return new Promise((resolve, reject) => {
                 const request = store.getAll();
@@ -142,6 +179,7 @@ const databases = {
     }
 
     async saveData(data) {
+        this._validateDbConfig();
         const allData = await this.getAllData();
         let targetId;
 
@@ -162,13 +200,13 @@ const databases = {
         }
 
         const newData = { ...data, id: targetId };
-        const saveorupdata = data.id || targetId >= 0 ? 'update' : 'save';   
-        console.log("saveorupdata",saveorupdata,data,targetId)
+        const saveOrUpdate = data.id || targetId >= 0 ? 'update' : 'save';   
+        console.log("saveOrUpdate", saveOrUpdate, data, targetId);
         return this.executeTransaction(this.dbConfig.store, 'readwrite', (store) => {
             return new Promise((resolve, reject) => {
                 const request = store.put(newData);
                 request.onsuccess = () => {
-                    this.idbObserver?.notify(saveorupdata, newData);
+                    this.idbObserver?.notify(saveOrUpdate, newData);
                     resolve(newData);
                 };
                 request.onerror = () => reject(request.error);
@@ -177,6 +215,7 @@ const databases = {
     }
 
     async deleteData(id) {
+        this._validateDbConfig();
         return this.executeTransaction(this.dbConfig.store, 'readwrite', (store) => {
             return new Promise((resolve, reject) => {
                 const request = store.delete(Number(id));
@@ -190,6 +229,7 @@ const databases = {
     }
 
     async clearDatabase() {
+        this._validateDbConfig();
         return this.executeTransaction(this.dbConfig.store, 'readwrite', (store) => {
             return new Promise((resolve, reject) => {
                 const request = store.clear();
@@ -201,7 +241,35 @@ const databases = {
             });
         });
     }
+
+    /**
+     * Creates a new IndexedDBManager instance with the specified database configuration
+     * @static
+     * @param {Object} dbConfig - Database configuration object
+     * @param {Object} [idbObserver] - Observer for database events
+     * @returns {IndexedDBManager} A new IndexedDBManager instance
+     * @throws {Error} If dbConfig is missing or invalid
+     */
+    static create(dbConfig, idbObserver) {
+        return new IndexedDBManager(dbConfig, idbObserver);
+    }
+
+    /**
+     * Gets all data from a database or creates the database if it doesn't exist
+     * @static
+     * @param {Object} dbConfig - Database configuration object
+     * @param {Array} [indexes=[]] - Array of index configurations
+     * @returns {Promise<Array>} Array of all data in the database
+     */
     static async getAllOrCreate(dbConfig, indexes = []) {
+        if (!dbConfig) {
+            throw new Error('Database configuration is required for getAllOrCreate');
+        }
+        
+        if (!dbConfig.name || !dbConfig.version || !dbConfig.store) {
+            throw new Error('Invalid database configuration. dbConfig must contain name, version, and store properties.');
+        }
+        
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(dbConfig.name, dbConfig.version);
 
@@ -241,7 +309,17 @@ const databases = {
         });
     }
 }
+
+/**
+ * Gets all data from a database or returns an empty array if the database doesn't exist
+ * @param {Object} databaseConfig - Database configuration object with name, version, and store properties
+ * @returns {Promise<Array>} Array of all data in the database or empty array if database doesn't exist
+ */
 async function getAllDataFromDatabase(databaseConfig) {
+    if (!databaseConfig || !databaseConfig.name || !databaseConfig.version || !databaseConfig.store) {
+        throw new Error('Invalid database configuration. databaseConfig must contain name, version, and store properties.');
+    }
+    
     return new Promise((resolve) => {
         const request = indexedDB.open(databaseConfig.name, databaseConfig.version);
 
@@ -286,8 +364,10 @@ async function getAllDataFromDatabase(databaseConfig) {
     });
 }
 
-
-
+/**
+ * Observer class for database events
+ * @class DBObserver
+ */
 class DBObserver {
 constructor() {
     this.listeners = [];
@@ -308,6 +388,6 @@ notify(action, data) {
 export { databases, IndexedDBManager, DBObserver, getAllDataFromDatabase } 
   
   // Usage example
-  // IndexedDBManager.updateData({ name: 'User 1', points: 100 }, 'name');
-  // IndexedDBManager.saveData({ na,additionalDatame: 'User 1', points: 100 }, 'name');
+  // const dbManager = IndexedDBManager.create(databases.ActionsDB);
+  // dbManager.saveData({ name: 'User 1', points: 100 });
   

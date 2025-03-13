@@ -34,25 +34,32 @@
           type="radio"
           id="command_trigger"
           name="command_trigger"
-          options='[{"value": "default", "label": "any comment"}, {"value": "comando", "label": "commenting command"}]'
+          options='[{"value": "any", "label": "any comment"},{"value": "contains", "label": "contains"}, {"value": "startswith", "label": "starts with"}, {"value": "endswith", "label": "ends with"}, {"value": "exact", "label": "exact"}]'
           value="true"
           ></custom-input>
       </div>
-      <div class="row">
-        <span id="command-label" lang="en">comando</span>
-          <custom-input
-          type="text"
-          id="command_value"
-          name="command_value"
-          placeholder="{{command.value}}"
-          ></custom-input>
-      </div>
 
+      <div id="command_subcontainer">
+        <div class="row">
+          <span id="command-label" lang="en">comando</span>
+            <custom-input
+            type="text"
+            id="command_value"
+            name="command_value"
+            placeholder="{{command.value}}"
+            ></custom-input>
+        </div>
+      </div>
+      <custom-input
+        type="number"
+        id="form_id"
+        name="form_id"
+        ></custom-input>
     </div>
     <custom-dialog id="userModal_dialog"
     style="border: 0px solid red;"
     theme="dark">
-  </ctom-dialog>
+  </custom-dialog>
   </dialog-container>
     <section class="content">
       <button type="button" class="btn btn-sm btn-outlined" > Button </button>
@@ -63,7 +70,6 @@
   </main>
   <script type="module">
     import { databases, IndexedDBManager, DBObserver, getAllDataFromDatabase } from './store/indexdb.js';
-    import { flattenObject, unflattenObject } from './utils/utils.js';
     const dbObserver = new DBObserver();
     const commandsDB = databases.commandsDB;
     const commandStore = new IndexedDBManager(commandsDB, dbObserver);
@@ -80,10 +86,10 @@
             callback: () => {
               const newdata = getModaldata();
               console.log('Save clicked', newdata);
-              if (validateModaldata(newdata)) {
-                const parsednewdata = unflattenObject(newdata);
-                console.log("parsednewdata",parsednewdata);
-              //  commandStore.saveData(newdata);
+              const keystovalues = getModaldata().command_trigger === "any" ?getkeysObject(getModaldata(true),["command_value","id"]) :  getkeysObject(getModaldata(true),["id"]);
+              console.log("keystovalues",keystovalues);
+              if (validateModaldata(newdata,keystovalues)) {
+                commandStore.saveData(newdata);
               //  userModal.hide();
               }
             }
@@ -97,33 +103,77 @@
             }
         }
     ]
-    function getModaldata() {
+    function getModaldata(getelements = false) {
       let allvalues = [];
       const command_name = document.querySelector('#command_name');
       const command_trigger = document.querySelector('#command_trigger');
       const command_value = document.querySelector('#command_value');
+      const form_id = document.querySelector('#form_id');
       const formelements = {
-        "command_name": command_name,
+        "name": command_name,
         "command_trigger": command_trigger,
-        "command_value": command_value
+        "command_value": command_value,
+        "id": form_id,
       }
       Object.keys(formelements).forEach(key => {
         allvalues[key] = formelements[key].getInputValues();
         // format form with resetInputValues
         //  formelements[key].resetInputValues();
       });
-      console.log(formelements);
+      //console.log(formelements);
+      if (getelements) return formelements;
       return { ...allvalues };
   }
-  function validateModaldata(data) {
+  function validateModaldata(data,values) {
       let isValid = true;
       Object.keys(data).forEach(key => {
+        //values is array of keys to validate
+        if (values && values.includes(key)) {
           if (data[key] === null || data[key] === undefined || data[key] === '') {
               isValid = false;
           }
+        }
       });
       return isValid;
   }
+  function getkeysObject(data, exclude = []) {
+    let keys = [];
+    Object.keys(data).forEach(key => {
+      if (exclude.includes(key)) return;
+      keys.push(key);
+    });
+    return keys;
+  }
+
+/// get commands
+ async function getCommands() {
+    const commands = await commandStore.getAllData();
+    console.log("commands",commands);
+    setFormData(commands[0]);
+    return commands;
+  }
+  getCommands();
+  function setFormData(data) {
+    const command_name = document.querySelector('#command_name');
+    const command_trigger = document.querySelector('#command_trigger');
+    const command_value = document.querySelector('#command_value');
+    const form_id = document.querySelector('#form_id');
+    command_name.setInputValues(data.name);
+    command_trigger.setInputValues(data.command_trigger);
+    command_value.setInputValues(data.command_value);
+    form_id.setInputValues(data.id);
+  }
+  // display none and display show with 
+  document.querySelector('#command_trigger').addEventListener('change', function(e) {
+    console.log(e.detail)
+    const trigger = e.detail.value;
+    const command_subcontainer = document.querySelector('#command_subcontainer');
+    if (trigger !== "any") {
+      command_subcontainer.style.display = "block";
+    } else {
+      command_subcontainer.style.display = "none";
+    }
+  });
   </script>
 </body>
 </html>

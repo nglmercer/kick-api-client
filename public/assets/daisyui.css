@@ -487,3 +487,7 @@
 .bg-secondary { background-color: var(--secondary); }
 .bg-accent { background-color: var(--accent); }
 .bg-base-100 { background-color: var(--base-100); }
+.row {
+  display: flex;
+  justify-content: space-between;
+}
