@@ -94,37 +94,50 @@
     </div>
     
     <script type="module">
+        import { databases, IndexedDBManager, DBObserver, getAllDataFromDatabase } from '../store/indexdb.js';
+        const dbObserver = new DBObserver();
+        const commandsDB = databases.commandsDB;
+        const commandStore = new IndexedDBManager(commandsDB, dbObserver);
         import CommandCardComponent from './commandCardComponent.js';
-        
+        async function getCommands() {
+            const commands = await commandStore.getAllData();
+            console.log("commands",commands);
+            return commands;
+        }
         // Datos de ejemplo para los comandos
         const sampleCommands = [
             {
                 name: 'Saludo',
-                command: '!hola',
+                command_trigger: 'startWith',
+                command_value: '!hola',
                 description: 'Saluda al usuario en el chat',
                 id: 1
             },
             {
                 name: 'Información',
-                command: '!info',
+                command_trigger: 'startWith',
+                command_value: '!info',
                 description: 'Muestra información sobre el canal y horarios',
                 id: 2
             },
             {
                 name: 'Redes Sociales',
-                command: '!redes',
+                command_trigger: 'startWith',
+                command_value: '!redes',
                 description: 'Muestra enlaces a todas las redes sociales',
                 id: 3   
             },
             {
                 name: 'Música',
-                command: '!song',
+                command_trigger: 'startWith',
+                command_value: '!song',
                 description: 'Muestra la canción que está sonando actualmente',
                 id: 4
             },
             {
                 name: 'Donación',
-                command: '!donate',
+                command_trigger: 'startWith',
+                command_value: '!donate',
                 description: 'Muestra enlaces para realizar donaciones',
                 id: 5
             }
@@ -154,10 +167,11 @@
         }
         
         // Función para crear un comando con datos aleatorios
-        function createRandomCommand() {
-            const randomIndex = Math.floor(Math.random() * sampleCommands.length);
-            const commandData = { ...sampleCommands[randomIndex] };
-                        
+        function createRandomCommand(commandData) {
+            if (!commandData) {
+                const randomIndex = Math.floor(Math.random() * sampleCommands.length);
+                commandData = { ...sampleCommands[randomIndex] };
+            }
             // Crear el componente de comando
             const commandCard = new CommandCardComponent();
             commandCard.setData(commandData);
@@ -226,12 +240,14 @@
         });
         
         // Inicializar con algunos comandos de ejemplo
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             // Agregar algunos comandos iniciales
-            for (let i = 0; i < 5; i++) {
-                const commandCard = createRandomCommand();
+            const allCommands = await getCommands();
+            console.log("allCommands",allCommands);
+            allCommands.forEach(command => {
+                const commandCard = createRandomCommand(command);
                 commandContainer.appendChild(commandCard);
-            }
+            });
             
             logEvent('Aplicación inicializada con 5 comandos');
         });

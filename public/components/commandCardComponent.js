@@ -222,8 +222,8 @@ class CommandCardComponent extends HTMLElement {
         </div>
         
         <div class="command-content">
-          <code class="command-trigger">${this._data.command || '!command'}</code>
-          <p class="command-description">${this._data.description || 'Stream chat command'}</p>
+          <code class="command-trigger">${this._data.command || this._data.command_value|| 'any command'}</code>
+          <p class="command-description">${this._data.description || this._data.command_trigger||'Stream chat command'}</p>
         </div>
         
       </div>
