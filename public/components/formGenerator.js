@@ -25,6 +25,7 @@ class FormGenerator {
     this.dbObserver = null;
     this.dbStore = null;
     this.formElements = {};
+    this.savecallback = config.savecallback;
   }
 
   /**
@@ -127,9 +128,7 @@ class FormGenerator {
     
     // Setup event listeners
     this.setupEventListeners();
-    
-    // Load data from database
-    await this.loadData();
+
   }
 
   /**
@@ -159,7 +158,7 @@ class FormGenerator {
     // Get form elements
     this.formElements = {};
     this.fields.forEach(field => {
-      this.formElements[field.id.replace('_', '')] = document.querySelector(`#${field.id}`);
+      this.formElements[field.id] = document.querySelector(`#${field.id}`);
     });
     
     // Get form ID element
@@ -208,17 +207,7 @@ class FormGenerator {
    * Handle save button click
    */
   handleSave() {
-    const formData = this.getFormData();
-    console.log('Save clicked', formData);
-    
-    // Validate form data
-    const keysToValidate = this.getKeysToValidate(formData);
-    console.log('Keys to validate', keysToValidate);
-    
-    if (this.validateFormData(formData, keysToValidate)) {
-      this.dbStore.saveData(formData);
-      // this.modal.hide(); // Uncomment to hide modal after save
-    }
+    this.savecallback();
   }
 
   /**
@@ -226,7 +215,11 @@ class FormGenerator {
    */
   handleCancel() {
     console.log('Cancel clicked');
-    // this.modal.hide(); // Uncomment to hide modal after cancel
+    // format all form elements
+    Object.keys(this.formElements).forEach(key => {
+      this.formElements[key].resetInputValues();
+    });
+    this.modal.hide(); // Uncomment to hide modal after cancel
   }
 
   /**
@@ -244,6 +237,12 @@ class FormGenerator {
       formData[key] = this.formElements[key].getInputValues();
     });
     
+    // Include the form ID in the form data
+    if (this.formIdElement) {
+      const formId = this.formIdElement.getInputValues();
+      formData.id = formId;
+    }
+    
     return formData;
   }
 
@@ -258,7 +257,7 @@ class FormGenerator {
     }
 
     const { fieldToCheck, valueToCheck, excludeFields } = this.validation;
-    
+    console.log('Field to check', fieldToCheck);  
     return formData[fieldToCheck] === valueToCheck
       ? this.getKeysObject(formData, excludeFields)
       : this.getKeysObject(formData, ['id']);
@@ -296,32 +295,12 @@ class FormGenerator {
     return isValid;
   }
 
-  /**
-   * Load data from database
-   */
-  async loadData() {
-    try {
-      const items = await this.dbStore.getAllData();
-      console.log(`${this.formId} data`, items);
-      if (items && items.length > 0) {
-        this.setFormData(items[0]);
-      }
-      return items;
-    } catch (error) {
-      console.error('Error loading data:', error);
-      return [];
-    }
-  }
 
-  /**
-   * Set form data from database
-   * @param {Object} data - Data object to set in form
-   */
   setFormData(data) {
     if (!data) return;
     // Set field values
     this.fields.forEach(field => {
-      const key = field.id.replace('_', '');
+      const key = field.id
       if (data[key] !== undefined) {
         this.formElements[key].setInputValues(data[key]);
       }

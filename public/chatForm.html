@@ -25,21 +25,12 @@
   </main>
 
   <script type="module">
-    import { initGiftForm } from './components/giftForm.js';
+    import { initcommandForm } from './components/chatform.js';
     import { databases, IndexedDBManager, DBObserver } from './store/indexdb.js';
-    
-    // Make sure the gifts database is defined
-    if (!window.databases) {
-      window.databases = {};
-    }
-    
-    if (!window.databases.giftsDB) {
-      window.databases.giftsDB = { name: 'Gifts', version: 1, store: 'gifts' };
-    }
-    
+
     // Initialize the gift form when the button is clicked
     document.getElementById('showFormBtn').addEventListener('click', () => {
-      initGiftForm('gift-form-container');
+      initcommandForm('gift-form-container');
     });
   </script>
 </body>
