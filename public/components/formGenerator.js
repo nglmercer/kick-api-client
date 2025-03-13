@@ -318,6 +318,7 @@ class FormGenerator {
    * @param {Object} data - Data object to set in form
    */
   setFormData(data) {
+    if (!data) return;
     // Set field values
     this.fields.forEach(field => {
       const key = field.id.replace('_', '');

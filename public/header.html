@@ -154,6 +154,7 @@
   }
   getCommands();
   function setFormData(data) {
+    if (!data) return;
     const command_name = document.querySelector('#command_name');
     const command_trigger = document.querySelector('#command_trigger');
     const command_value = document.querySelector('#command_value');
