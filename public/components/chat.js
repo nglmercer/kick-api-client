@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         {
           id: "1730752",
           name: "emojiAngel",
+          src: "https://static-cdn.jtvnw.net/emoticons/v2/1730752/3.0"
         }
       ]
     },
