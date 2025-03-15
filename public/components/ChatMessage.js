@@ -1,9 +1,13 @@
-// src/components/ChatMessage.js
 class ChatMessage extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
+    
+    // Initialize all data properties with defaults
     this._data = null;
+    this._emotes = [];
+    this._uniqueId = '';
+    this._type = '';
   }
 
   static get observedAttributes() {
@@ -17,23 +21,25 @@ class ChatMessage extends HTMLElement {
 
   attributeChangedCallback(name, oldValue, newValue) {
     if (oldValue !== newValue) {
+      // Only render when attributes actually change
       this.render();
     }
   }
 
   set data(value) {
-    this._data = value;
-    this.setAttribute('nickname', value.nickname || '');
-    this.setAttribute('comment', value.comment || '');
-    this.setAttribute('profile-picture-url', value.profilePictureUrl || '');
-    this.setAttribute('color', value.color || '#ffffff');
+    // Store the complete data object
+    this._data = value || {};
     
-    // Store emotes and uniqueId as properties since they're not attributes
-    this._emotes = value.emotes || [];
-    this._uniqueId = value.uniqueId || '';
-    this._type = value.type || '';
+    // Set attributes from data (these will trigger attributeChangedCallback)
+    this.setAttribute('nickname', value?.nickname || '');
+    this.setAttribute('comment', value?.comment || '');
+    this.setAttribute('profile-picture-url', value?.profilePictureUrl || '');
+    this.setAttribute('color', value?.color || '#ffffff');
     
-    this.render();
+    // Store other properties that aren't attributes
+    this._emotes = Array.isArray(value?.emotes) ? value.emotes : [];
+    this._uniqueId = value?.uniqueId || '';
+    this._type = value?.type || '';
   }
 
   get data() {
@@ -41,8 +47,11 @@ class ChatMessage extends HTMLElement {
   }
 
   addEventListeners() {
+    const container = this.shadowRoot.querySelector('.chat-message-container');
+    if (!container) return;
+    
     // Add right-click event listener
-    this.shadowRoot.querySelector('.chat-message-container').addEventListener('contextmenu', (e) => {
+    container.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       this.dispatchEvent(new CustomEvent('message-context', {
         bubbles: true,
@@ -52,53 +61,80 @@ class ChatMessage extends HTMLElement {
     });
 
     // Add three dots menu click event listener
-    this.shadowRoot.querySelector('.menu-dots').addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.dispatchEvent(new CustomEvent('message-menu', {
-        bubbles: true,
-        composed: true,
-        detail: this._data
-      }));
-    });
+    const menuDots = this.shadowRoot.querySelector('.menu-dots');
+    if (menuDots) {
+      menuDots.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent('message-menu', {
+          bubbles: true,
+          composed: true,
+          detail: this._data
+        }));
+      });
+    }
   }
 
   processMessageWithEmotes(comment, emotes) {
-    if (!emotes || emotes.length === 0) return comment;
+    // Early return if comment is empty or emotes is not an array
+    if (!comment || !comment.trim()) return '';
+    if (!Array.isArray(emotes) || emotes.length === 0) return comment;
     
-    // First, create a safe copy of the comment
+    // Create a working copy
     let processedComment = comment;
     
-    // Replace each emote pattern with the corresponding image
-    emotes.forEach((emote, index) => {
-      // Create a pattern that matches the exact emote code format
-      const emotePattern = `[emote:${emote.id}:${emote.name}]`;
-      
-      // Replace with placeholder first to avoid regex issues
-      const placeholder = `__EMOTE_PLACEHOLDER_${index}__`;
-      processedComment = processedComment.replace(emotePattern, placeholder);
+    // Check if any emotes are present in the comment
+    const hasEmotes = emotes.some(emote => {
+      if (!emote || !emote.id || !emote.name) return false;
+      const pattern = `[emote:${emote.id}:${emote.name}]`;
+      return processedComment.includes(pattern);
     });
     
-    // Now replace all placeholders with actual image tags
+    // If no emotes are found, return the original comment
+    if (!hasEmotes) return comment;
+    
+    // Map for placeholder replacement
+    const placeholderMap = new Map();
+    
+    // First pass: replace emotes with placeholders
     emotes.forEach((emote, index) => {
+      if (!emote || !emote.id || !emote.name || !emote.url) return;
+      
+      const emotePattern = `[emote:${emote.id}:${emote.name}]`;
       const placeholder = `__EMOTE_PLACEHOLDER_${index}__`;
-      processedComment = processedComment.replace(
-        placeholder, 
-        `<img src="${emote.url}" alt="${emote.name}" class="emote" />`
-      );
+      
+      // Only process if the pattern exists
+      if (processedComment.includes(emotePattern)) {
+        processedComment = processedComment.split(emotePattern).join(placeholder);
+        placeholderMap.set(
+          placeholder, 
+          `<img src="${emote.url}" alt="${emote.name}" class="emote" />`
+        );
+      }
+    });
+    
+    // Second pass: replace placeholders with HTML
+    placeholderMap.forEach((htmlContent, placeholder) => {
+      processedComment = processedComment.split(placeholder).join(htmlContent);
     });
     
     return processedComment;
   }
 
   render() {
+    // Get attribute values with defaults
     const nickname = this.getAttribute('nickname') || '';
     const comment = this.getAttribute('comment') || '';
     const profilePictureUrl = this.getAttribute('profile-picture-url') || '';
     const color = this.getAttribute('color') || '#ffffff';
     
+    // Ensure emotes is always an array
+    const emotes = Array.isArray(this._emotes) ? this._emotes : [];
+    
     // Process comment with emotes
-    const processedComment = this.processMessageWithEmotes(comment, this._emotes);
-
+    const processedComment = this.processMessageWithEmotes(comment, emotes);
+    console.log("processedComment", processedComment, comment, emotes);
+    
+    // Set the HTML content
     this.shadowRoot.innerHTML = `
       <style>
         :host {
@@ -135,6 +171,9 @@ class ChatMessage extends HTMLElement {
         .comment {
           word-break: break-word;
           color: #ffffff;
+          img {
+            max-width: min(100%, 2rem);
+          }
         }
         
         .menu-dots {
@@ -174,6 +213,9 @@ class ChatMessage extends HTMLElement {
         </div>
       </div>
     `;
+    
+    // Add event listeners after DOM is created
+    this.addEventListeners();
   }
 }
 

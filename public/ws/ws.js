@@ -23,6 +23,16 @@ socket.onopen = () => {
 socket.onmessage = (event) => {
   const message = parseIfJson(event.data);
   console.log("Mensaje recibido:", message);
+  switch (message.eventType) {
+    case "chat.message.sent":
+      if (window.createmessage) {
+        window.createmessage(message.data);
+      }
+      break;
+    default:
+      console.log("Evento no reconocido:", message.eventType);
+      break;
+  }
 };
 
 socket.onclose = () => {

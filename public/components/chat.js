@@ -1,9 +1,9 @@
-// src/main.js
 import './ChatMessage.js';
+import { GetAvatarUrlKick } from '../api/kickapi.js';
+// src/main.js
 
 // Example of how to use the component
 document.addEventListener('DOMContentLoaded', async () => {
-  const chatContainer = document.getElementById('chat-container');
   
   // Example data
   const exampleMessages = [
@@ -41,15 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Create and append chat messages
   for (const messageData of exampleMessages) {
-    try {
-      const chatData = await mapChatMessagetochat(messageData);
-      const chatMessage = document.createElement('chat-message');
-      chatMessage.data = chatData;
-      
-      chatContainer.appendChild(chatMessage);
-    } catch (error) {
-      console.error('Error creating chat message:', error);
-    }
+    createmessage(messageData);
   }
 
   // Handle custom events
@@ -65,25 +57,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // utils/mappers.js
-export async function mapChatMessagetochat(data) {
+async function mapChatMessagetochat(data) {
+  console.log("emotes", data.emotes || getEmoteUrl(data.content).emotes);
   return {
-    comment: data.content,
+    comment: getEmoteUrl(data.content).html,
     type: data.type,
     uniqueId: data.sender?.username,
     nickname: data.sender?.slug,
     color: data.sender?.indentity?.color,
-    emotes: data.emotes, // this is array of emotes
+    emotes: data.emotes || getEmoteUrl(data.content).emotes, // this is array of emotes
     profilePictureUrl: await GetAvatarUrlKick.getProfilePic(data.sender?.username),
   };
 }
 
 // Mock implementation of GetAvatarUrlKick for the example
-export const GetAvatarUrlKick = {
+/* const GetAvatarUrlKick = {
   async getProfilePic(username) {
     // In a real app, this would fetch the actual profile pic URL
     return `https://placehold.co/600x400?text=${username}`;
   }
-};
+}; */
+async function createmessage(messageData) {
+  const chatContainer = document.getElementById('chat-container');
+
+  try {
+    const chatData = await mapChatMessagetochat(messageData);
+    const chatMessage = document.createElement('chat-message');
+    chatMessage.data = chatData;
+    
+    chatContainer.appendChild(chatMessage);
+  } catch (error) {
+    console.error('Error creating chat message:', error);
+  }
+}
 // https://files.kick.com/emotes/1730752/fullsize"
 function getEmoteUrl(message = "Hola [emote:1730752:emojiAngel] mundo") {
   const regex = /\[emote:(\d+):([a-zA-Z0-9]+)\]/g;
@@ -117,4 +123,6 @@ function getEmoteUrl(message = "Hola [emote:1730752:emojiAngel] mundo") {
     emotes         // Array con los emotes encontrados
   };
 }
+window.createmessage = createmessage;
 console.log(getEmoteUrl("Hola [emote:1730752:emojiAngel] mundo"));
+export {createmessage, mapChatMessagetochat, GetAvatarUrlKick, getEmoteUrl};
