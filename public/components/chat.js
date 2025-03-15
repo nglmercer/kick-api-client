@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Example data
   const exampleMessages = [
     {
-      content: "Hola [emote:1730752:emojiAngel] mundo",
+      content: "Hola ",
       type: "message",
       sender: {
         username: "melserngi",
@@ -19,9 +19,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       },
       emotes: [
         {
-          id: "1730752",
-          name: "emojiAngel",
-          src: "https://static-cdn.jtvnw.net/emoticons/v2/1730752/3.0"
+          id: "37215",
+          name: "AYAYA",
+          src: getEmoteUrl("Hola [emote:37215:AYAYA] mundo").emotes[0].url,
+          url: getEmoteUrl("Hola [emote:37215:AYAYA] mundo").emotes[0].url
         }
       ]
     },
@@ -60,10 +61,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function mapChatMessagetochat(data) {
   console.log("emotes", data.emotes || getEmoteUrl(data.content).emotes);
   return {
-    comment: getEmoteUrl(data.content).html,
-    type: data.type,
+    comment: data.content,
+    type: data.type || "message",
     uniqueId: data.sender?.username,
-    nickname: data.sender?.slug,
+    nickname: data.sender?.slug || data.sender?.channel_slug,
     color: data.sender?.indentity?.color,
     emotes: data.emotes || getEmoteUrl(data.content).emotes, // this is array of emotes
     profilePictureUrl: await GetAvatarUrlKick.getProfilePic(data.sender?.username),

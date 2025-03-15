@@ -248,7 +248,7 @@ const alleventsArray = [
 
 // Initialize API client
 const kickAPI = new KickAPI();
-
+window.kickAPI = kickAPI;
 
 
 // Helper function to map events
@@ -283,3 +283,10 @@ kickAPI.getChannels();
 kickAPI.updateChannel({
     streamTitle: 'test1234!'
 });
+const inputchat = document.getElementById('chat-input');
+if (inputchat) {
+    inputchat.addEventListener('form-submit', (e) => {
+    console.log('Form submitted:', e.detail);
+    kickAPI.sendChatMessage(e.detail.value);
+    });
+}

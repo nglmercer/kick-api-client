@@ -460,6 +460,14 @@ if (!customElements.get('custom-input')) {
         
         // Corregimos el manejo del evento submit
         const form = this.shadowRoot.querySelectorAll('form');
+        if (form) {
+          form.forEach(form => {
+            form.addEventListener('submit', (e) => {
+              const data = this.getInputValues();
+              this.handleSubmit(e,data);
+            });
+          });
+        }
       }
     
       disconnectedCallback() {
@@ -501,20 +509,19 @@ if (!customElements.get('custom-input')) {
           this.render();
         }
       }
-      handleSubmit(e) {
+      handleSubmit(e,data = null) {
         e.preventDefault(); // Prevenimos la recarga de la página
         
         // Validamos el formulario
         const form = e.target;
         const isValid = form.checkValidity();
-        
         if (isValid) {
           // Disparamos un evento personalizado con los datos del formulario
           this.dispatchEvent(new CustomEvent('form-submit', {
             detail: {
               id: this.getAttribute('id'),
               name: this.getAttribute('name'),
-              value: this.getInputValues()
+              value: data
             },
             bubbles: true,
             composed: true
