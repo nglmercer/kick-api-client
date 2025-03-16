@@ -61,8 +61,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 function setandOpenPopup(element, popupId = "custom-popup", e) {
     const baseOptions = [
-      returnMenuOption("update_command", "Actualizar Comando", "edit", () => updateRandomCommand(e.detail.data)),
-      returnMenuOption("clear_commands", "Limpiar Comandos", "delete", () => clearCommands(e.detail.data)),
+      //<span class="material-symbols-outlined">language_japanese_kana</span>
+      returnMenuOption("translate_command", "Traducir Comando", "translate", () => translateCommand(e.detail.data)),
+      returnMenuOption("play_command", "Reproducir Comando", "play_circle", () => playCommand(e.detail.data)),
   ];
   const popupOptions = baseOptions.map(option => ({
       html: `${hoverStyles}
@@ -76,16 +77,17 @@ function setandOpenPopup(element, popupId = "custom-popup", e) {
   setPopupOptions(popupOptions);
   openPopup(element, popupId);
 }
-function updateRandomCommand(data) {
-  console.log("updateRandomCommand",data);
+function translateCommand(data) {
+  console.log("translateCommand",data);
 }
-function clearCommands(data) {
-  console.log("clearCommands",data);
+function playCommand(data) {
+  console.log("playCommand",data);
 }
 // utils/mappers.js
 async function mapChatMessagetochat(data) {
   console.log("emotes", data.emotes || getEmoteUrl(data.content).emotes);
   return {
+    id: data.id || data.message_id,
     comment: data.content,
     type: data.type || "message",
     uniqueId: data.sender?.username,
@@ -151,4 +153,57 @@ function getEmoteUrl(message = "Hola [emote:1730752:emojiAngel] mundo") {
 }
 window.createmessage = createmessage;
 console.log(getEmoteUrl("Hola [emote:1730752:emojiAngel] mundo"));
+
+function findChatMessageById(containerId, messageId) {
+  const chatContainer = document.getElementById(containerId);
+  if (!chatContainer) {
+    console.error(`Container with ID ${containerId} not found`);
+    return null;
+  }
+  
+  // Get all chat message components in the container
+  const chatMessages = chatContainer.querySelectorAll('chat-message');
+  
+  // Find the message with the matching uniqueId
+  for (const message of chatMessages) {
+    if (message.data && message.data.uniqueId === messageId) {
+      return message;
+    }
+  }
+  
+  console.warn(`Message with ID ${messageId} not found`);
+  return null;
+}
+
+// Function to update chat message content
+function updateChatMessage(containerId, messageId, updates) {
+  const chatMessage = findChatMessageById(containerId, messageId);
+  if (!chatMessage) return false;
+  
+  // Make a copy of the current data
+  const updatedData = { ...chatMessage.data };
+  
+  // Apply updates
+  Object.keys(updates).forEach(key => {
+    // Special handling for nested properties
+    if (key.includes('.')) {
+      const parts = key.split('.');
+      let obj = updatedData;
+      
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (!obj[parts[i]]) obj[parts[i]] = {};
+        obj = obj[parts[i]];
+      }
+      
+      obj[parts[parts.length - 1]] = updates[key];
+    } else {
+      updatedData[key] = updates[key];
+    }
+  });
+  
+  // Update the component data
+  chatMessage.data = updatedData;
+  return true;
+}
+
 export {createmessage, mapChatMessagetochat, GetAvatarUrlKick, getEmoteUrl};
