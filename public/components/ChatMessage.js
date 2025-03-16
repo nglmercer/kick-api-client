@@ -46,7 +46,9 @@ class ChatMessage extends HTMLElement {
       this.dispatchEvent(new CustomEvent('message-context', {
         bubbles: true,
         composed: true,
-        detail: this._data
+        detail: {data:this._data,
+          element: container
+        }
       }));
     });
 
@@ -57,7 +59,9 @@ class ChatMessage extends HTMLElement {
         this.dispatchEvent(new CustomEvent('message-menu', {
           bubbles: true,
           composed: true,
-          detail: this._data
+          detail: {data:this._data,
+            element: menuDots
+          }
         }));
       });
     }

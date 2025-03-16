@@ -1,5 +1,6 @@
 import './ChatMessage.js';
 import { GetAvatarUrlKick } from '../api/kickapi.js';
+import {setPopupOptions, returnMenuOption, openPopup, hoverStyles} from '../options/popupoptions.js'
 // src/main.js
 
 // Example of how to use the component
@@ -49,14 +50,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('message-context', (e) => {
     console.log('Right-click on message:', e.detail);
     // You can show a context menu here
+    setandOpenPopup(e.detail.element, "#message-popup", e);
   });
 
   document.addEventListener('message-menu', (e) => {
     console.log('Menu clicked for message:', e.detail);
     // You can show a dropdown menu here
+    setandOpenPopup(e.detail.element, "#message-popup", e);
   });
 });
-
+function setandOpenPopup(element, popupId = "custom-popup", e) {
+    const baseOptions = [
+      returnMenuOption("update_command", "Actualizar Comando", "edit", () => updateRandomCommand(e.detail.data)),
+      returnMenuOption("clear_commands", "Limpiar Comandos", "delete", () => clearCommands(e.detail.data)),
+  ];
+  const popupOptions = baseOptions.map(option => ({
+      html: `${hoverStyles}
+          <div class="dropdown-item">
+              <span class="material-symbols-rounded">${option.icon}</span>
+              <span class="default-font">${option.text}</span>
+          </div>
+      `,
+      callback: (e) => option.callback(e)
+  }));
+  setPopupOptions(popupOptions);
+  openPopup(element, popupId);
+}
+function updateRandomCommand(data) {
+  console.log("updateRandomCommand",data);
+}
+function clearCommands(data) {
+  console.log("clearCommands",data);
+}
 // utils/mappers.js
 async function mapChatMessagetochat(data) {
   console.log("emotes", data.emotes || getEmoteUrl(data.content).emotes);
