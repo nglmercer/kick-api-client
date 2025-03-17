@@ -2,6 +2,7 @@ import './ChatMessage.js';
 import { GetAvatarUrlKick } from '../api/kickapi.js';
 import {setPopupOptions, returnMenuOption, openPopup, hoverStyles} from '../options/popupoptions.js'
 import { sendText } from '../actions/ai/src/translate.js';
+import { getTTSAPI } from '../actions/audio/tts-api.js';
 // src/main.js
 
 // Example of how to use the component
@@ -84,6 +85,8 @@ function translateCommand(data) {
 }
 function playCommand(data) {
   console.log("playCommand",data);
+  const configVoice = {}
+  getTTSAPI(configVoice).speak(data.content || data.comment); 
 }
 // utils/mappers.js
 async function mapChatMessagetochat(data) {
