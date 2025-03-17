@@ -21,3 +21,8 @@ creame el diseño de una pagina para interfaz de gestion del chat de kick, donde
 4. Gestión de Comandos
 5. Vista Previa del Chat
 6. Alertas y Notificaciones
+
+### task list 
+1. add form container (commands & ai options)
+2. add store items
+3. add voice options
