@@ -1,4 +1,4 @@
-import { blobToJSON, base64ToArrayBuffer, functions1, Emitter, audioContext } from "./utils";
+import { blobToJSON, base64ToArrayBuffer, functions1, Emitter, audioContext } from "./utils.js";
   const {
     ClientContentMessage,
     isInterrupted,

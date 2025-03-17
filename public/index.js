@@ -278,7 +278,7 @@ console.log("datenow", datenow(),new Date());
 // Execute API calls
 // kickAPI.getCategories();
 initializeEvents();
-kickAPI.sendChatMessage("hola esta es la hora "+datenow());
+kickAPI.sendChatMessage("hello, this is the time "+datenow());
 kickAPI.getChannels();
 kickAPI.updateChannel({
     streamTitle: 'test1234!'

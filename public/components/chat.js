@@ -1,6 +1,7 @@
 import './ChatMessage.js';
 import { GetAvatarUrlKick } from '../api/kickapi.js';
 import {setPopupOptions, returnMenuOption, openPopup, hoverStyles} from '../options/popupoptions.js'
+import { sendText } from '../actions/ai/src/translate.js';
 // src/main.js
 
 // Example of how to use the component
@@ -79,6 +80,7 @@ function setandOpenPopup(element, popupId = "custom-popup", e) {
 }
 function translateCommand(data) {
   console.log("translateCommand",data);
+  sendText(JSON.stringify(data));
 }
 function playCommand(data) {
   console.log("playCommand",data);

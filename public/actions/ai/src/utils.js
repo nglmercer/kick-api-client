@@ -143,7 +143,7 @@
       if (!data || !data.text) {
         throw new Error("La respuesta está vacía o es indefinida.");
       }
-  
+      console.log("parseResponse",data);
       const response = data.text.trim(); // Eliminamos espacios extra
       if (!response.startsWith("```json") || !response.endsWith("```")) {
         throw new Error("El formato del JSON no es válido.");
