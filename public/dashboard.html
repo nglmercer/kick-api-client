@@ -22,9 +22,11 @@
   
   <main>
 
+    <custom-popup id="message-popup" class="material-symbols-rounded">
+    </custom-popup>
+    <custom-popup id="commandPopup" class="material-symbols-rounded">
+    </custom-popup>
     <section class="content">
-      <custom-popup id="message-popup" class="material-symbols-rounded">
-      </custom-popup>
       <div class="chat_container">
         <div id="chat-container"></div>
       </div>
@@ -34,7 +36,25 @@
           placeholder="Escribe un mensaje"
         ></custom-input>
       </div>
-  </main>
+
+      <div id="commandFormContainer"></div>
+      <div class="container">
+          <h1>Comandos para Stream Chat</h1>
+          
+          <div class="actions">
+              <button id="addCommand">Agregar Comando</button>
+          </div>
+          
+          <div class="command-grid" id="commandContainer"></div>
+          
+          <div id="eventLog">
+              <h3>Registro de Eventos:</h3>
+              <div id="logEntries"></div>
+          </div>
+      </div>
+      
+<!--       <script type="module" src="./components/commandCC.js"></script>
+ -->  </main>
 
 </body>
 </html>
