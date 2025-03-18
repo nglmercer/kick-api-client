@@ -161,7 +161,7 @@
       console.log("Respuesta exitosa:", json);
       return json; // Devolver el objeto parseado si es válido
     } catch (error) {
-      console.error("Error al parsear la respuesta:", error.message);
+      console.error("Error al parsear la respuesta:", error);
       return null; // Devolver null en caso de error
     }
   }
@@ -731,7 +731,7 @@ class Emitter {
 
   static getInstance(id) {
     if (!Emitter.instances.has(id)) {
-      throw new Error(`No Emitter instance found with id: ${id}`);
+      return null;
     }
     return Emitter.instances.get(id);
   }

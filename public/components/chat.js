@@ -2,9 +2,16 @@ import './ChatMessage.js';
 import { GetAvatarUrlKick } from '../api/kickapi.js';
 import {setPopupOptions, returnMenuOption, openPopup, hoverStyles} from '../options/popupoptions.js'
 import { sendText } from '../actions/ai/src/translate.js';
+import { Emitter } from '../actions/ai/src/utils.js';
 import { getTTSAPI } from '../actions/audio/tts-api.js';
 // src/main.js
-
+const translateEmitter = new Emitter('translation');
+translateEmitter.on('translation', translation => {
+  console.log('Translation received:', translation);
+  console.log("translation params",translation.originaInput.id, translation.translation);
+  const result = updateChatMessage("chat-container", translation.originaInput.id ,{ comment: translation.translation});
+  console.log("result",result);
+});
 // Example of how to use the component
 document.addEventListener('DOMContentLoaded', async () => {
   
@@ -85,7 +92,7 @@ function translateCommand(data) {
 }
 function playCommand(data) {
   console.log("playCommand",data);
-  const configVoice = {}
+  const configVoice = {}/// change and fix Uncaught (in promise) Error: Provider undefined is not available
   getTTSAPI(configVoice).speak(data.content || data.comment); 
 }
 // utils/mappers.js
@@ -171,7 +178,7 @@ function findChatMessageById(containerId, messageId) {
   
   // Find the message with the matching uniqueId
   for (const message of chatMessages) {
-    if (message.data && message.data.uniqueId === messageId) {
+    if (message.data && message.data.id === messageId) {
       return message;
     }
   }
@@ -187,7 +194,7 @@ function updateChatMessage(containerId, messageId, updates) {
   
   // Make a copy of the current data
   const updatedData = { ...chatMessage.data };
-  
+  console.log("after",updatedData);
   // Apply updates
   Object.keys(updates).forEach(key => {
     // Special handling for nested properties
@@ -205,10 +212,12 @@ function updateChatMessage(containerId, messageId, updates) {
       updatedData[key] = updates[key];
     }
   });
-  
+  console.log("before",updatedData);
   // Update the component data
   chatMessage.data = updatedData;
   return true;
 }
 
 export {createmessage, mapChatMessagetochat, GetAvatarUrlKick, getEmoteUrl};
+//7616fa15-8ff1-46a8-a758-5b6fb7dc10ad
+//7616fa15-8ff1-46a8-a758-5b6fb7dc10ad

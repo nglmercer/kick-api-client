@@ -15,7 +15,7 @@ class TTSAPI {
     constructor(options = {}) {
         // Get configuration from localStorage or use defaults
         const config = options.config || getTTSconfig(options.configKey);
-        
+        this.config = config;
         // Create TTS Manager
         this.ttsManager = new TTSManager(config);
         this.configKey = options.configKey;
@@ -51,7 +51,8 @@ class TTSAPI {
      * @returns {Promise<any>} Promise that resolves when speech starts
      */
     async speak(text, options = {}) {
-        return this.ttsManager.speak(text, options);
+        console.log("options",options,this.options);
+        return this.ttsManager.speak(text, options || this.config);
     }
     
     /**

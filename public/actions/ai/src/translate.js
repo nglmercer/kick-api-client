@@ -21,7 +21,7 @@ function verifyAPIKey() {
   if (apikey && apikey !== "") {
     return apikey;
   } else {
-    apikey ="AIzaSyC0wJqIa_Jv3k4XOfuzqfnVrMDHN18lcNk";// import.meta.env.VITE_GEMINI_API_KEY;
+    apikey ="AIzaSyCN6e1rxJtbWbCO6Kruoj7m9vaEtxTuVaw";// import.meta.env.VITE_GEMINI_API_KEY;
   }
   return apikey;
 }
@@ -59,11 +59,12 @@ const config = {
     },
   },
   systemInstruction: {
-    parts: [{ text: JSON.parse(localStorage.getItem("configAPI"))?.stringInstruction || `Eres una IA de traducción. Tu tarea es recibir un texto en español y devolver un JSON. 
+    parts: [{ text: JSON.parse(localStorage.getItem("configAPI"))?.stringInstruction || `Tu tarea es recibir un texto y devolver un JSON.
     Formato de salida:  
     {  
-      ...originaldata,
-      translations: "si es texto traduce el texto si es objeto traduce el objeto"
+      "original_text": "texto a traducir",
+      "translation": "texto traducido",
+      "originaInput": "objeto o texto original"
     }  `
     }],
 
