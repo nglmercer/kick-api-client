@@ -47,7 +47,7 @@ function initcommandForm(containerId) {
     savecallback: () => {
       const newdata = getModaldata();
       console.log('Save clicked', newdata);
-
+      localStorage.setItem('AI_Control', JSON.stringify(newdata));
     }
 
   };
@@ -55,6 +55,8 @@ function initcommandForm(containerId) {
   // Create the form generator and initialize it
   const commandForm = new FormGenerator(commandFormConfig);
   commandForm.init(containerId);
+  const lastformdata = localStorage.getItem('AI_Control');
+  commandForm.setFormData(lastformdata ? JSON.parse(lastformdata) : {});
   return commandForm;
 }
 function getModaldata(getelements = false) {
