@@ -27,19 +27,6 @@ class FormGenerator {
     this.savecallback = config.savecallback;
   }
 
-  /**
-   * Initialize the database connection
-   * @returns {IndexedDBManager} The database store instance
-   */
-  initDatabase() {
-    const dbConfig = databases[this.dbName];
-    if (!dbConfig) {
-      console.error(`Database ${this.dbName} not found in databases configuration`);
-      return null;
-    }
-    this.dbStore = new IndexedDBManager(dbConfig, "dbObserver");
-    return this.dbStore;
-  }
 
   /**
    * Generate the HTML for the form
@@ -118,8 +105,6 @@ class FormGenerator {
     // Generate and inject the modal HTML
     container.innerHTML = this.generateModalHTML();
     
-    // Initialize database
-    this.initDatabase();
     
     // Setup UI elements
     this.setupUI();

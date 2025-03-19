@@ -10,19 +10,7 @@ npm install
 
 ### docs 
 kick api docs [here](https://docs.kick.com/)
-### design
-creame el diseño de una pagina para interfaz de gestion del chat de kick, donde se puede cambiar el titulo del stream, similar a streamlabs streamelements
-1. Barra de Navegación Superior
-    - user profile
-    - logout button
-    - login button
-2. Panel de Control Principal
-3. Configuración de Chat
-4. Gestión de Comandos
-5. Vista Previa del Chat
-6. Alertas y Notificaciones
 
 ### task list 
-1. add form container (commands & ai options)
-2. add store items
-3. add voice options
+1. add voice options
+2. add chat moderation filters

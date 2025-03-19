@@ -54,7 +54,7 @@ function openPopup(element, popupId = "custom-popup") {
     }
 }
 // Datos de ejemplo para los comandos
-const sampleCommands = [
+/* const sampleCommands = [
     {
         name: 'Saludo',
         command_trigger: 'startWith',
@@ -90,7 +90,7 @@ const sampleCommands = [
         description: 'Muestra enlaces para realizar donaciones',
         id: 5
     }
-];
+]; */
 
 // Referencias a elementos del DOM
 const commandContainer = document.getElementById('commandContainer');
