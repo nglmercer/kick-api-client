@@ -30,7 +30,7 @@ socket.onmessage = (event) => {
       }
       break;
     default:
-      console.log("Evento no reconocido:", message.eventType);
+      console.log("Evento no reconocido:", message.eventType, message);
       break;
   }
 };

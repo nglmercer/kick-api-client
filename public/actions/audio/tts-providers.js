@@ -296,7 +296,7 @@ class ResponsiveVoiceProvider extends TTSProvider {
 
     async speak(text, options = {}) {
         if (!this.isAvailable()) {
-            throw new Error('ResponsiveVoice is not available');
+            throw new Error('ResponsiveVoice is not available', options);
         }
 
         // Determine voice name

@@ -346,3 +346,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // Make ttsPlayer available globally for direct API access
     window.ttsPlayer = ttsPlayer;
 });
+export { TTSPlayer };
