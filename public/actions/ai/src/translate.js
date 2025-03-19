@@ -17,7 +17,7 @@ const uri = `wss://${host}/ws/google.ai.generativelanguage.v1alpha.GenerativeSer
 const API_KEY = verifyAPIKey();
 function verifyAPIKey() {
   // if exist api in local storage
-  let apikey = JSON.parse(localStorage.getItem("configAPI"))?.apikey;
+  let apikey = JSON.parse(localStorage.getItem("AI_Control"))?.apikey_input;
   if (apikey && apikey !== "") {
     return apikey;
   } else {
