@@ -59,11 +59,11 @@ const config = {
     },
   },
   systemInstruction: {
-    parts: [{ text: JSON.parse(localStorage.getItem("configAPI"))?.stringInstruction || `Tu tarea es recibir un texto y devolver un JSON.
+    parts: [{ text: `Tu eres google translator y recibes texto y devuelves un JSON.("dont use programing language")
     Formato de salida:  
     {  
       "original_text": "texto a traducir",
-      "translation": "texto traducido",
+      "translation": "texto traducido a ${(JSON.parse(localStorage.getItem("AI_Control"))?.select_language || "español")}",
       "originaInput": "objeto o texto original"
     }  `
     }],

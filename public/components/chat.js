@@ -2,14 +2,15 @@ import './ChatMessage.js';
 import { GetAvatarUrlKick } from '../api/kickapi.js';
 import {setPopupOptions, returnMenuOption, openPopup, hoverStyles} from '../options/popupoptions.js'
 import { sendText } from '../actions/ai/src/translate.js';
-import { Emitter } from '../actions/ai/src/utils.js';
+import { Emitter, safeParse } from '../actions/ai/src/utils.js';
 import { getTTSAPI } from '../actions/audio/tts-api.js';
 // src/main.js
 const translateEmitter = new Emitter('translation');
 translateEmitter.on('translation', translation => {
-  console.log('Translation received:', translation);
-  console.log("translation params",translation.originaInput.id, translation.translation);
-  const result = updateChatMessage("chat-container", translation.originaInput.id ,{ comment: translation.translation});
+  console.log('translateEmitter received:', translation);
+  const originaInput  = safeParse(translation.originaInput);
+  console.log("translateEmitter params",originaInput.id, translation.translation);
+  const result = updateChatMessage("chat-container", originaInput.id ,{ comment: translation.translation});
   console.log("result",result);
 });
 // Example of how to use the component

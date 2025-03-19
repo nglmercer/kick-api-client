@@ -19,14 +19,13 @@ queue.addToQueue({ input: 'Hola', traducciones: { es: 'Hola', en: 'Hello' } });
 
 // Constantes y configuración inicial
 const MAIN_INSTRUCTION = "Eres una IA de traducción. Tu tarea es recibir un texto en español y devolver un JSON con las traducciones al inglés y japonés. O también, si no se entiende o se hacen gestos, acciones o onomatopeyas, puedes narrarlo en el formato deseado.";
-const INPUT_TEXT = "<texto original en español usando muchos términos en inglés también>";
 const TRANSLATIONS = [
-  { label: "traducción al español", value: "es" },
-  { label: "traducción al inglés", value: "en" },
-  { label: "traducción al japonés", value: "jp" },
-  { label: "traducción al portugués", value: "pt" },
-  { label: "traducción al francés", value: "fr" },
-  { label: "traducción al italiano", value: "it" },
+  { label: "traducción al español", value: "spanish" },
+  { label: "traducción al inglés", value: "english" },
+  { label: "traducción al japonés", value: "japanese" },
+  { label: "traducción al portugués", value: "portuguese" },
+  { label: "traducción al francés", value: "french" },
+  { label: "traducción al italiano", value: "italian" }
 ];
 
 // Función para generar el string de instrucciones

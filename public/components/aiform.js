@@ -8,12 +8,12 @@ import { FormGenerator } from './formGenerator.js';
  * @param {string} containerId - ID of the container element to inject the form
  */
 const TRANSLATIONS = [
-  { label: "traducción al español", value: "es" },
-  { label: "traducción al inglés", value: "en" },
-  { label: "traducción al japonés", value: "jp" },
-  { label: "traducción al portugués", value: "pt" },
-  { label: "traducción al francés", value: "fr" },
-  { label: "traducción al italiano", value: "it" },
+  { label: "traducción al español", value: "spanish" },
+  { label: "traducción al inglés", value: "english" },
+  { label: "traducción al japonés", value: "japanese" },
+  { label: "traducción al portugués", value: "portuguese" },
+  { label: "traducción al francés", value: "french" },
+  { label: "traducción al italiano", value: "italian" }
 ];
 function initcommandForm(containerId) {
   // Define the form configuration
