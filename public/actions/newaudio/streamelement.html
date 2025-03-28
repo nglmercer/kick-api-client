@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejemplo TTS Provider</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
+        #log { max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-top: 15px; font-size: 0.9em; background-color: #f9f9f9; }
+        label, input, select, button { margin-bottom: 10px; display: block; }
+        input[type="text"] { width: 300px; padding: 8px; }
+        select { padding: 8px; }
+        button { padding: 10px 15px; cursor: pointer; margin-right: 10px;}
+        #audioPlayer { margin-top: 15px; width: 100%; max-width: 400px; }
+        a { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>Prueba de TTS Provider (StreamElements)</h1>
+
+    <label for="textoInput">Texto a reproducir:</label>
+    <input type="text" id="textoInput" value="Hola, esto es una prueba de texto a voz.">
+
+    <label for="voiceSelect">Voz:</label>
+    <select id="voiceSelect">
+        <!-- Las voces se cargarán aquí -->
+    </select>
+
+    <button id="speakButton">Reproducir (Speak)</button>
+    <button id="generateButton">Generar URL (Generate)</button>
+    <button id="stopButton">Detener (Stop)</button>
+
+    <hr>
+    <h2>Resultado Generación URL:</h2>
+    <p><a id="audioUrlOutput" href="#">(Aquí aparecerá la URL generada)</a></p>
+    <audio id="audioPlayer" controls>
+        Tu navegador no soporta el elemento de audio.
+    </audio>
+
+    <h2>Log:</h2>
+    <div id="log"></div>
+
+    <!-- Incluir el script JS -->
+    <script src="./tts-provider.js"></script> <!-- Cambia 'tu_script.js' al nombre de tu archivo -->
+    <script>
+const tts = new StreamElementsProvider({
+    // defaultVoice: "Mia", // Sobrescribir voz por defecto de la instancia
+    volume: 0.7,         // Sobrescribir volumen por defecto
+    // cacheSize: 10     // Sobrescribir tamaño de caché
+});
+
+// Función auxiliar para añadir logs en la página
+function log(message) {
+    const logDiv = document.getElementById('log');
+    if (logDiv) {
+        const entry = document.createElement('div');
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        logDiv.appendChild(entry);
+        logDiv.scrollTop = logDiv.scrollHeight; // Auto-scroll
+    } else {
+        console.log(message);
+    }
+}
+
+async function ejemploSpeak() {
+    const texto = document.getElementById('textoInput').value || "Hola mundo desde StreamElements";
+    const voiceSelect = document.getElementById('voiceSelect');
+    const selectedVoice = voiceSelect ? voiceSelect.value : tts.config.defaultVoice;
+
+    log(`Intentando reproducir: "${texto}" con voz ${selectedVoice}`);
+    const btn = document.getElementById('speakButton');
+    btn.disabled = true;
+    btn.textContent = 'Reproduciendo...';
+
+    try {
+        // Opciones específicas para esta llamada a speak
+        await tts.speak(texto, {
+            voiceName: selectedVoice,
+             rate: 1.2, // Un poco más rápido
+            // pitch: 1.0, // Tono normal
+             volume: 0.9 // Un poco más alto que el default de la instancia
+        });
+        log(`Reproducción completada: "${texto}"`);
+    } catch (error) {
+        log(`Error al reproducir: ${error.message}`);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Reproducir (Speak)';
+    }
+}
+
+async function ejemploGenerateUrl() {
+    const texto = document.getElementById('textoInput').value || "Este es un audio generado";
+    const voiceSelect = document.getElementById('voiceSelect');
+    const selectedVoice = voiceSelect ? voiceSelect.value : tts.config.defaultVoice;
+    const urlOutput = document.getElementById('audioUrlOutput');
+    const audioPlayer = document.getElementById('audioPlayer');
+
+    log(`Generando URL para: "${texto}" con voz ${selectedVoice}`);
+    urlOutput.textContent = 'Generando...';
+    audioPlayer.src = ''; // Limpiar reproductor
+
+    try {
+        const audioUrl = await tts.generateAudioUrl(texto, { voiceName: selectedVoice });
+        log(`URL generada (Blob): ${audioUrl.substring(0, 70)}...`);
+        urlOutput.textContent = `URL: ${audioUrl}`;
+        urlOutput.href = audioUrl; // Hacerla clickeable/descargable
+        urlOutput.target = '_blank';
+        audioPlayer.src = audioUrl; // Ponerla en un <audio> para prueba
+    } catch (error) {
+        log(`Error al generar URL: ${error.message}`);
+        urlOutput.textContent = `Error: ${error.message}`;
+        urlOutput.removeAttribute('href');
+    }
+}
+
+function ejemploStop() {
+    log("Deteniendo audio...");
+    tts.stop();
+    // Reactivar botón de speak si estaba desactivado por reproducción
+    const btn = document.getElementById('speakButton');
+     if (btn.textContent === 'Reproduciendo...') {
+         btn.disabled = false;
+         btn.textContent = 'Reproducir (Speak)';
+     }
+    log("Llamada a stop() completada.");
+}
+
+// Inicializar al cargar la página
+window.onload = async () => {
+    try {
+        await tts.initialize();
+        log("TTS Provider inicializado.");
+
+        if (tts.isAvailable()) {
+            log("StreamElements Provider está disponible.");
+            const voices = tts.getVoices();
+            const voiceSelect = document.getElementById('voiceSelect');
+            if (voiceSelect) {
+                voices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.value = voice.name;
+                    option.textContent = voice.name;
+                    if (voice.name === tts.config.defaultVoice) {
+                        option.selected = true;
+                    }
+                    voiceSelect.appendChild(option);
+                });
+                log(`Voces cargadas: ${voices.length}`);
+            }
+        } else {
+            log("StreamElements Provider NO está disponible.");
+        }
+    } catch (error) {
+        log(`Error inicializando TTS: ${error}`);
+    }
+
+    // Asignar eventos a botones
+    document.getElementById('speakButton')?.addEventListener('click', ejemploSpeak);
+    document.getElementById('generateButton')?.addEventListener('click', ejemploGenerateUrl);
+    document.getElementById('stopButton')?.addEventListener('click', ejemploStop);
+};
+    </script>
+</body>
+</html>

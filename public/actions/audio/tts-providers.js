@@ -1,11 +1,3 @@
-/**
- * TTS Providers Module
- * 
- * This module provides a unified interface for different text-to-speech providers.
- * It includes implementations for Web Speech API, ResponsiveVoice, and a custom API provider.
- */
-
-// Default TTS configuration
 const DEFAULT_TTS_CONFIG = {
     webSpeech: {
         enabled: true,
@@ -37,7 +29,13 @@ const DEFAULT_TTS_CONFIG = {
         volume: 1.0
     }
 };
-
+const defaultStreamElementsConfig = {
+    enabled: true,
+    defaultVoice: "Mia",
+    rate: 1.0,
+    pitch: 1.0,
+    volume: 1.0
+};
 /**
  * Base TTS Provider class that defines the interface for all providers
  */
@@ -97,7 +95,114 @@ class TTSProvider {
         // Default implementation does nothing
     }
 }
+class StreamElementsProvider extends TTSProvider {
+    constructor(config = {}) {
+        super(config);
+        this.endpoint = "https://api.streamelements.com/kappa/v2/speech?";
+        this.audioMap = {};
+        this.audioKeys = [];
+        this.lastReadText = "";
+    }
 
+    async initialize() {
+        return true; // StreamElements API is always available
+    }
+
+    isAvailable() {
+        return true; // StreamElements API is always available
+    }
+
+    getVoices() {
+        // StreamElements voices
+        return [
+            { name: "Brian" },
+            { name: "Amy" },
+            { name: "Emma" },
+            { name: "Ivy" },
+            { name: "Joanna" },
+            { name: "Justin" },
+            { name: "Kendra" },
+            { name: "Kimberly" },
+            { name: "Matthew" },
+            { name: "Salli" },
+            { name: "Joey" },
+            { name: "Mizuki" }
+        ];
+    }
+
+    async speak(text, options = {}) {
+        const audioUrl = await this.generateAudioUrl(text, options);
+        
+        // Create and play audio element
+        const audio = new Audio(audioUrl);
+        audio.volume = options.volume !== undefined ? parseFloat(options.volume) : this.config.volume;
+        audio.play();
+        
+        return audio;
+    }
+
+    async generateAudioUrl(text, options = {}) {
+        try {
+            if (text === this.lastReadText) {
+                return this.audioMap[text];
+            }
+
+            this.lastReadText = text;
+
+            if (this.audioMap[text]) {
+                return this.audioMap[text];
+            }
+
+            // Determine voice to use
+            const voice = options.voiceName || this.config.defaultVoice || "Brian";
+            
+            const params = new URLSearchParams({
+                voice: voice,
+                text: text
+            });
+
+            // Add rate if specified
+            if (options.rate !== undefined) {
+                // StreamElements API doesn't directly support rate, but we can add it for future compatibility
+                params.append('rate', options.rate);
+            }
+
+            // Add any additional parameters from options
+            Object.keys(options).forEach(key => {
+                if (!['voiceName', 'voiceIndex', 'rate', 'pitch', 'volume'].includes(key)) {
+                    params.append(key, options[key]);
+                }
+            });
+
+            const resp = await fetch(this.endpoint + params.toString());
+            if (resp.status !== 200) {
+                throw new Error(`StreamElements API error: status code ${resp.status}`);
+            }
+
+            const blob = await resp.blob();
+            const blobUrl = URL.createObjectURL(blob);
+
+            this.audioMap[text] = blobUrl;
+            this.audioKeys.push(text);
+
+            // Limit cache size
+            if (this.audioKeys.length > 100) {
+                const oldestKey = this.audioKeys.shift();
+                URL.revokeObjectURL(this.audioMap[oldestKey]);
+                delete this.audioMap[oldestKey];
+            }
+
+            return blobUrl;
+        } catch (error) {
+            console.error("Error generating audio URL with StreamElements:", error);
+            throw error;
+        }
+    }
+
+    stop() {
+        // Nothing to stop for this provider
+    }
+}
 /**
  * Web Speech API Provider
  */
@@ -270,9 +375,9 @@ class WebSpeechProvider extends TTSProvider {
 }
 
 /**
- * ResponsiveVoice Provider
+ * responsiveVoice Provider
  */
-class ResponsiveVoiceProvider extends TTSProvider {
+class responsiveVoiceProvider extends TTSProvider {
     constructor(config = {}) {
         super(config);
         this.voices = [];
@@ -296,7 +401,7 @@ class ResponsiveVoiceProvider extends TTSProvider {
 
     async speak(text, options = {}) {
         if (!this.isAvailable()) {
-            throw new Error('ResponsiveVoice is not available', options);
+            throw new Error('responsiveVoice is not available', options);
         }
 
         // Determine voice name
@@ -331,16 +436,16 @@ class ResponsiveVoiceProvider extends TTSProvider {
             }
         });
         
-        // Play with ResponsiveVoice
+        // Play with responsiveVoice
         window.responsiveVoice.speak(text, voiceName, params);
         
         return { voiceName, params };
     }
 
     async generateAudioUrl(text, options = {}) {
-        // ResponsiveVoice doesn't provide a direct way to get audio URLs
+        // responsiveVoice doesn't provide a direct way to get audio URLs
         // This is a placeholder for future implementation
-        throw new Error('ResponsiveVoice does not support direct audio URL generation');
+        throw new Error('responsiveVoice does not support direct audio URL generation');
     }
 
     stop() {
@@ -571,7 +676,7 @@ class TTSManager {
         // Initialize providers
         this.providers = {
             webSpeech: new WebSpeechProvider(this.config.webSpeech),
-            responsiveVoice: new ResponsiveVoiceProvider(this.config.responsiveVoice),
+            responsiveVoice: new responsiveVoiceProvider(this.config.responsiveVoice),
             customApi: new CustomApiProvider(this.config.customApi),
             streamElements: new StreamElementsProvider(this.config.streamElements)
         };
@@ -601,8 +706,9 @@ class TTSManager {
             );
         }
         
-        // Initialize ResponsiveVoice provider
+        // Initialize responsiveVoice provider
         if (this.config.responsiveVoice.enabled) {
+            console.log("this.config.responsiveVoice.enabled",this.config.responsiveVoice.enabled);
             initPromises.push(
                 this.providers.responsiveVoice.initialize()
                     .then(available => {
@@ -610,7 +716,7 @@ class TTSManager {
                         return available;
                     })
                     .catch(err => {
-                        console.warn('Failed to initialize ResponsiveVoice:', err);
+                        console.warn('Failed to initialize responsiveVoice:', err);
                         return false;
                     })
             );
@@ -674,9 +780,9 @@ class TTSManager {
     async speak(text, options = {}) {
         const providerName = options.provider || this.availableProviders[0];
         
-        if (!providerName || !this.availableProviders.includes(providerName)) {
+/*         if (!providerName || !this.availableProviders.includes(providerName)) {
             throw new Error(`Provider ${providerName} is not available`);
-        }
+        } */
         
         return this.providers[providerName].speak(text, options);
     }
@@ -753,4 +859,25 @@ class TTSManager {
     }
 }
 
-export { TTSProvider, WebSpeechProvider, ResponsiveVoiceProvider, CustomApiProvider, StreamElementsProvider, TTSManager, DEFAULT_TTS_CONFIG };
+// Pasamos un objeto vacío como argumento inicial
+export { TTSProvider, WebSpeechProvider, responsiveVoiceProvider, CustomApiProvider, StreamElementsProvider, TTSManager, DEFAULT_TTS_CONFIG };
+/*(function(obj = {}) {
+    // Aquí puedes modificar/añadir propiedades a obj si lo necesitas
+    // Por ejemplo:
+    obj.saludar = () => console.log('Hola');
+    obj.numero = 42;
+
+    // Export para CommonJS
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = obj;
+    }
+    
+    // Export para ES Modules (corrección de sintaxis)
+    if (typeof import.meta !== 'undefined') {
+        // Opción 1: Export default
+        export default obj;
+        
+        // O Opción 2: Named export
+         export { obj };
+    }
+})({}); */

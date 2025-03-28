@@ -63,7 +63,7 @@ class TTSPlayer {
         
         // Get all voices from TTS API
         const allVoices = this.ttsAPI.getAllVoices();
-        
+        console.log("allVoices",allVoices);
         // Set Web Speech voices
         if (allVoices.webSpeech) {
             this.voices = allVoices.webSpeech;
@@ -101,7 +101,8 @@ class TTSPlayer {
     populateResponsiveVoiceList() {
         // Clear existing options
         this.responsiveVoiceSelect.innerHTML = '';
-        
+        console.log('populateResponsiveVoiceList', this.responsiveVoices);
+
         // Add available ResponsiveVoice voices to select element
         this.responsiveVoices.forEach((voice, index) => {
             const option = document.createElement('option');

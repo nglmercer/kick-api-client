@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Speech TTS Example</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 15px; border: 1px solid #ccc; }
+        label { display: block; margin-top: 10px; }
+        textarea { width: 95%; min-height: 80px; margin-top: 5px; }
+        select, input[type="range"], input[type="number"] { width: 95%; margin-top: 5px; }
+        button { padding: 10px 15px; margin-top: 15px; margin-right: 10px; cursor: pointer; }
+        #status { margin-top: 15px; font-style: italic; color: #555; }
+        #audioPlayerContainer { margin-top: 15px; }
+        .slider-container { display: flex; align-items: center; gap: 10px; }
+        .slider-container input[type="range"] { flex-grow: 1; }
+        .slider-container span { min-width: 30px; text-align: right; }
+    </style>
+</head>
+<body>
+
+    <h1>Prueba de Web Speech TTS</h1>
+
+    <div>
+        <label for="textInput">Texto a Sintetizar:</label>
+        <textarea id="textInput">Hola mundo. Esta es una prueba de la API de Web Speech.</textarea>
+    </div>
+
+    <div>
+        <label for="voiceSelect">Voz:</label>
+        <select id="voiceSelect">
+            <option value="-1">Cargando voces...</option>
+        </select>
+    </div>
+
+    <div>
+        <label for="rateSlider">Velocidad (<span id="rateValue">1.0</span>):</label>
+        <div class="slider-container">
+             <input type="range" id="rateSlider" min="0.1" max="3" step="0.1" value="1.0">
+             <span>1.0</span>
+        </div>
+    </div>
+
+    <div>
+        <label for="pitchSlider">Tono (<span id="pitchValue">1.0</span>):</label>
+         <div class="slider-container">
+            <input type="range" id="pitchSlider" min="0" max="2" step="0.1" value="1.0">
+            <span>1.0</span>
+        </div>
+    </div>
+
+    <div>
+        <label for="volumeSlider">Volumen (<span id="volumeValue">1.0</span>):</label>
+        <div class="slider-container">
+            <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1.0">
+             <span>1.0</span>
+        </div>
+    </div>
+
+    <div>
+        <button id="speakButton">Hablar</button>
+        <button id="generateUrlButton">Generar URL</button>
+        <button id="stopButton">Detener</button>
+        <button id="updateConfigButton">Guardar Config Predeterminada</button>
+    </div>
+
+    <div id="status">Listo.</div>
+    <div id="audioPlayerContainer"></div>
+
+    <!-- Incluir las clases TTSProvider y WebSpeechProvider aquí -->
+     <script src="./tts-provider.js"></script>
+    <script>
+        // --- PEGA AQUÍ LAS CLASES TTSProvider y WebSpeechProvider CORREGIDAS ---
+        // class TTSProvider { ... }
+        // class WebSpeechProvider extends TTSProvider { ... }
+        // --------------------------------------------------------------------
+
+
+        // --- Lógica de la Aplicación ---
+        const textInput = document.getElementById('textInput');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const rateSlider = document.getElementById('rateSlider');
+        const pitchSlider = document.getElementById('pitchSlider');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const rateValueSpan = rateSlider.nextElementSibling; // Span al lado del slider
+        const pitchValueSpan = pitchSlider.nextElementSibling;
+        const volumeValueSpan = volumeSlider.nextElementSibling;
+
+        const speakButton = document.getElementById('speakButton');
+        const generateUrlButton = document.getElementById('generateUrlButton');
+        const stopButton = document.getElementById('stopButton');
+        const updateConfigButton = document.getElementById('updateConfigButton');
+        const statusDiv = document.getElementById('status');
+        const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+
+        let ttsProvider = null;
+        let currentBlobUrl = null; // Para gestionar la URL del Blob
+
+        function updateSliderValue(slider, span) {
+           span.textContent = parseFloat(slider.value).toFixed(1);
+        }
+
+        rateSlider.oninput = () => updateSliderValue(rateSlider, rateValueSpan);
+        pitchSlider.oninput = () => updateSliderValue(pitchSlider, pitchValueSpan);
+        volumeSlider.oninput = () => updateSliderValue(volumeSlider, volumeValueSpan);
+
+
+        async function initializeApp() {
+            statusDiv.textContent = 'Inicializando proveedor TTS...';
+            // Configuración inicial (opcional)
+            const initialConfig = {
+                 // defaultVoice: 'Google español' // Ejemplo: poner un nombre de voz si lo conoces
+            };
+            ttsProvider = new WebSpeechProvider(initialConfig);
+
+            const initialized = await ttsProvider.initialize();
+
+            if (!initialized || !ttsProvider.isAvailable()) {
+                statusDiv.textContent = 'Error: Web Speech API no está disponible o no se pudo inicializar.';
+                speakButton.disabled = true;
+                generateUrlButton.disabled = true;
+                stopButton.disabled = true;
+                updateConfigButton.disabled = true;
+                voiceSelect.disabled = true;
+                return;
+            }
+
+            statusDiv.textContent = 'Proveedor listo. Cargando voces...';
+            populateVoiceList();
+            updateConfigButton.disabled = false; // Habilitar botón de config
+            statusDiv.textContent = 'Listo.';
+        }
+
+        function populateVoiceList() {
+            const voices = ttsProvider.getVoices();
+            voiceSelect.innerHTML = ''; // Limpiar opciones previas
+
+            if (voices.length === 0) {
+                 const option = document.createElement('option');
+                 option.textContent = 'No hay voces disponibles';
+                 option.value = "-1";
+                 voiceSelect.appendChild(option);
+                 voiceSelect.disabled = true;
+                 return;
+            }
+
+             voiceSelect.disabled = false;
+             const defaultOption = document.createElement('option');
+             defaultOption.textContent = '-- Voz por defecto del navegador --';
+             defaultOption.value = "-1"; // Usar -1 o un valor que indique "ninguno"
+             voiceSelect.appendChild(defaultOption);
+
+
+            voices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                if (voice.default) {
+                    option.textContent += ' [Default]';
+                }
+                option.setAttribute('data-lang', voice.lang);
+                option.setAttribute('data-name', voice.name);
+                option.value = index.toString(); // Usar índice como valor
+                voiceSelect.appendChild(option);
+            });
+
+             // Seleccionar la voz predeterminada de la config si existe
+             const configVoiceName = ttsProvider.config.defaultVoice;
+             if (configVoiceName) {
+                 const configVoiceIndex = voices.findIndex(v => v.name === configVoiceName);
+                 if (configVoiceIndex !== -1) {
+                     voiceSelect.value = configVoiceIndex.toString();
+                 }
+             }
+        }
+
+        function getSpeakOptions() {
+            const selectedIndex = parseInt(voiceSelect.value, 10);
+            const options = {
+                rate: parseFloat(rateSlider.value),
+                pitch: parseFloat(pitchSlider.value),
+                volume: parseFloat(volumeSlider.value),
+                // Solo pasar voiceIndex si se seleccionó una voz específica
+                voiceIndex: selectedIndex >= 0 ? selectedIndex : undefined
+            };
+            // Alternativamente, podrías pasar voiceName si prefieres:
+            // if (selectedIndex >= 0) {
+            //    options.voiceName = ttsProvider.getVoices()[selectedIndex].name;
+            // }
+            return options;
+        }
+
+        speakButton.addEventListener('click', async () => {
+            const text = textInput.value.trim();
+            if (!text || !ttsProvider) return;
+
+            const options = getSpeakOptions();
+            speakButton.disabled = true;
+            generateUrlButton.disabled = true; // Deshabilitar también generar mientras habla
+            stopButton.disabled = false;
+            statusDiv.textContent = 'Hablando...';
+            audioPlayerContainer.innerHTML = ''; // Limpiar reproductor anterior
+            revokeCurrentBlobUrl(); // Liberar URL anterior si existe
+
+            try {
+                await ttsProvider.speak(text, options);
+                statusDiv.textContent = 'Terminó de hablar.';
+            } catch (error) {
+                console.error('Error al hablar:', error);
+                statusDiv.textContent = `Error: ${error.message}`;
+            } finally {
+                speakButton.disabled = false;
+                generateUrlButton.disabled = false;
+                stopButton.disabled = true; // Deshabilitar stop cuando termina
+            }
+        });
+
+        generateUrlButton.addEventListener('click', async () => {
+            const text = textInput.value.trim();
+            if (!text || !ttsProvider) return;
+
+            const options = getSpeakOptions();
+            generateUrlButton.disabled = true;
+            speakButton.disabled = true; // Deshabilitar hablar mientras genera
+            stopButton.disabled = false; // Permitir detener la generación (que incluye hablar)
+            statusDiv.textContent = 'Generando URL (esto reproducirá el audio)...';
+            audioPlayerContainer.innerHTML = '';
+            revokeCurrentBlobUrl();
+
+            try {
+                const audioUrl = await ttsProvider.generateAudioUrl(text, options);
+                currentBlobUrl = audioUrl; // Guardar para poder liberarlo luego
+                statusDiv.textContent = 'URL generada.';
+                const audioElement = document.createElement('audio');
+                audioElement.controls = true;
+                audioElement.src = audioUrl;
+                audioPlayerContainer.appendChild(document.createTextNode('Audio generado: '));
+                audioPlayerContainer.appendChild(audioElement);
+
+                 // Opcional: revocar la URL cuando el audio ya no se necesite (p.ej., al generar uno nuevo)
+                 // Se hace en revokeCurrentBlobUrl()
+            } catch (error) {
+                console.error('Error al generar URL:', error);
+                statusDiv.textContent = `Error al generar URL: ${error.message}`;
+            } finally {
+                generateUrlButton.disabled = false;
+                speakButton.disabled = false;
+                 // stopButton se deshabilita porque generateAudioUrl/speak interno ya terminó o falló
+                 stopButton.disabled = true;
+            }
+        });
+
+        stopButton.addEventListener('click', () => {
+            if (ttsProvider) {
+                ttsProvider.stop();
+                statusDiv.textContent = 'Reproducción detenida.';
+                speakButton.disabled = false;
+                generateUrlButton.disabled = false;
+                stopButton.disabled = true; // Ya no hay nada que detener
+            }
+        });
+
+        updateConfigButton.addEventListener('click', () => {
+            if (!ttsProvider) return;
+
+            const newConfig = {
+                rate: parseFloat(rateSlider.value),
+                pitch: parseFloat(pitchSlider.value),
+                volume: parseFloat(volumeSlider.value),
+            };
+            const selectedIndex = parseInt(voiceSelect.value, 10);
+             if (selectedIndex >= 0) {
+                 newConfig.defaultVoice = ttsProvider.getVoices()[selectedIndex].name;
+             } else {
+                 newConfig.defaultVoice = null; // O dejar el que estaba
+             }
+
+            ttsProvider.setConfig(newConfig);
+            statusDiv.textContent = 'Configuración predeterminada actualizada.';
+            alert('Valores actuales guardados como predeterminados para esta sesión.');
+        });
+
+        function revokeCurrentBlobUrl() {
+             if (currentBlobUrl) {
+                console.log("Revoking previous Blob URL:", currentBlobUrl);
+                URL.revokeObjectURL(currentBlobUrl);
+                currentBlobUrl = null;
+             }
+        }
+
+        // Limpiar URL del blob al cerrar la página
+        window.addEventListener('beforeunload', revokeCurrentBlobUrl);
+
+        // Inicializar al cargar la página
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+    </script>
+
+</body>
+</html>

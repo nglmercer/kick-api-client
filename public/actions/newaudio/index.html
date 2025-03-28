@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejemplo TTS Provider Multiple</title>
+    <style>
+        /* Estilos (sin cambios respecto al anterior, puedes añadir más si quieres) */
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
+        #log { max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin-top: 15px; font-size: 0.9em; background-color: #f9f9f9; }
+        label, input, select, button { margin-bottom: 10px; display: block; }
+        input[type="text"] { width: 300px; padding: 8px; }
+        select { padding: 8px; min-width: 200px; }
+        button { padding: 10px 15px; cursor: pointer; margin-right: 10px;}
+        button:disabled { cursor: not-allowed; opacity: 0.6; }
+        #audioPlayer { margin-top: 15px; width: 100%; max-width: 400px; }
+        a { color: blue; }
+        .provider-selection { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+    </style>
+    
+    <!-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
+    <!-- !! IMPORTANTE: Incluir la librería ResponsiveVoice aquí !! -->
+    <!-- !! Obtén tu clave API y el script desde responsivevoice.org !! -->
+    <!-- <script src="https://code.responsivevoice.org/responsivevoice.js?key=TU_CLAVE_API"></script> -->
+    <!-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
+    <script
+                                src="https://code.responsivevoice.org/responsivevoice.js?key=dOCpnhMj"></script>
+</head>
+<body>
+    <h1>Prueba de TTS Providers</h1>
+
+    <div class="provider-selection">
+        <label for="providerSelect">Seleccionar Proveedor TTS:</label>
+        <select id="providerSelect">
+            <option value="streamElements">StreamElements</option>
+            <option value="responsiveVoice">ResponsiveVoice</option>
+            <!-- Añadir más proveedores aquí -->
+        </select>
+    </div>
+
+    <label for="textoInput">Texto a reproducir:</label>
+    <input type="text" id="textoInput" value="Hola, esto es una prueba de texto a voz.">
+
+    <label for="voiceSelect">Voz:</label>
+    <select id="voiceSelect">
+        <!-- Las voces se cargarán aquí dinámicamente -->
+        <option value="">-- Selecciona Proveedor Primero --</option>
+    </select>
+
+    <button id="speakButton">Reproducir (Speak)</button>
+    <button id="generateButton">Generar URL (Generate)</button>
+    <button id="stopButton">Detener (Stop)</button>
+
+    <hr>
+    <h2>Resultado Generación URL:</h2>
+    <p><a id="audioUrlOutput" href="#">(Aquí aparecerá la URL generada)</a></p>
+    <audio id="audioPlayer" controls>
+        Tu navegador no soporta el elemento de audio.
+    </audio>
+
+    <h2>Log:</h2>
+    <div id="log"></div>
+
+    <!-- Incluir las clases TTSProvider (si está en otro archivo) -->
+    <!-- <script src="TTSProvider.js"></script> -->
+    <!-- Incluir las implementaciones -->
+    <!-- <script src="StreamElementsProvider.js"></script> -->
+    <!-- <script src="ResponsiveVoiceProvider.js"></script> -->
+
+    <!-- Incluir el script principal del ejemplo -->
+    <script src="./tts-provider.js"></script> <!-- Cambia al nombre de tu archivo JS -->
+    <script>
+        // --- Clases TTSProvider, StreamElementsProvider, ResponsiveVoiceProvider ---
+// ... (Pega aquí las definiciones de las clases TTSProvider, StreamElementsProvider y ResponsiveVoiceProvider)
+// ... O asegúrate de que estén incluidas mediante <script src="..."> antes de este script.
+
+// --- Lógica Principal del Ejemplo ---
+
+let currentProvider = null; // Variable para almacenar la instancia del proveedor actual
+const providers = { // Un objeto para acceder fácilmente a las instancias
+    streamElements: new StreamElementsProvider({ volume: 0.7 }),
+    responsiveVoice: new ResponsiveVoiceProvider({ volume: 0.9, rate: 0.9 }), // Ejemplo de config diferente
+};
+
+// Función auxiliar para añadir logs
+function log(message) {
+    const logDiv = document.getElementById('log');
+    if (logDiv) {
+        const entry = document.createElement('div');
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        logDiv.appendChild(entry);
+        logDiv.scrollTop = logDiv.scrollHeight;
+    } else {
+        console.log(message);
+    }
+}
+
+// Función para actualizar la UI según el proveedor seleccionado
+async function updateUIForProvider(providerKey) {
+    log(`Cambiando al proveedor: ${providerKey}`);
+    currentProvider = providers[providerKey];
+
+    if (!currentProvider) {
+        log(`Error: Proveedor '${providerKey}' no encontrado.`);
+        return;
+    }
+
+    const voiceSelect = document.getElementById('voiceSelect');
+    const generateButton = document.getElementById('generateButton');
+    voiceSelect.innerHTML = '<option value="">Cargando voces...</option>'; // Limpiar y mostrar carga
+    generateButton.disabled = true; // Deshabilitar por defecto mientras carga
+
+    try {
+        // Intentar inicializar el proveedor (si no lo estaba ya)
+        // La inicialización debería ser idempotente o manejar múltiples llamadas
+        const initialized = await currentProvider.initialize();
+
+        if (initialized && currentProvider.isAvailable()) {
+            log(`Proveedor ${currentProvider.constructor.name} inicializado y disponible.`);
+
+            // Cargar voces
+            const voices = currentProvider.getVoices(); // Asumimos que getVoices es síncrono después de init
+            voiceSelect.innerHTML = ''; // Limpiar opciones de carga/anteriores
+
+            if (voices.length > 0) {
+                 voices.forEach(voice => {
+                     const option = document.createElement('option');
+                     option.value = voice.name;
+                     option.textContent = voice.name;
+                     // Seleccionar la voz por defecto de la configuración del proveedor
+                     if (voice.name === currentProvider.config.defaultVoice) {
+                         option.selected = true;
+                     }
+                     voiceSelect.appendChild(option);
+                 });
+                 log(`Voces cargadas para ${currentProvider.constructor.name}: ${voices.length}`);
+                 voiceSelect.disabled = false;
+            } else {
+                 voiceSelect.innerHTML = '<option value="">-- No hay voces disponibles --</option>';
+                 voiceSelect.disabled = true;
+                 log(`No se encontraron voces para ${currentProvider.constructor.name}.`);
+            }
+
+
+            // Habilitar/Deshabilitar "Generar URL" según la capacidad del proveedor
+            try {
+                // Intentamos llamar a generateAudioUrl con texto vacío para ver si lanza "no implementado"
+                // Es un pequeño hack, una mejor forma sería tener una propiedad `supportsUrlGeneration`
+                await currentProvider.generateAudioUrl('', {});
+                 // Si no lanza error (o lanza por texto vacío), asumimos que está implementado
+                 generateButton.disabled = false;
+                 log(`El proveedor ${currentProvider.constructor.name} SÍ soporta generación de URL.`);
+            } catch (error) {
+                 // Si el error indica que no está implementado, lo dejamos deshabilitado
+                 if (error.message.includes('not implemented') || error.message.includes('does not support')) {
+                     generateButton.disabled = true;
+                     log(`El proveedor ${currentProvider.constructor.name} NO soporta generación de URL.`);
+                 } else {
+                     // Otro tipo de error (ej. texto vacío), lo habilitamos igualmente
+                     generateButton.disabled = false;
+                      log(`El proveedor ${currentProvider.constructor.name} SÍ soporta generación de URL (detectado por error diferente a 'no implementado').`);
+                 }
+            }
+
+        } else {
+            log(`Proveedor ${currentProvider.constructor.name} NO está disponible o falló la inicialización.`);
+            voiceSelect.innerHTML = '<option value="">-- Proveedor no disponible --</option>';
+            voiceSelect.disabled = true;
+            generateButton.disabled = true;
+        }
+    } catch (error) {
+        log(`Error grave al inicializar o configurar el proveedor ${providerKey}: ${error}`);
+        voiceSelect.innerHTML = '<option value="">-- Error al cargar --</option>';
+        voiceSelect.disabled = true;
+        generateButton.disabled = true;
+    }
+}
+
+// --- Funciones de Ejemplo (Modificadas para usar currentProvider) ---
+
+async function ejemploSpeak() {
+    if (!currentProvider) {
+        log("Por favor, selecciona un proveedor primero.");
+        return;
+    }
+
+    const texto = document.getElementById('textoInput').value || "Hola mundo";
+    const voiceSelect = document.getElementById('voiceSelect');
+    // Usar la voz seleccionada, o la default del proveedor si no hay selección/voces
+    const selectedVoice = voiceSelect.disabled ? currentProvider.config.defaultVoice : voiceSelect.value;
+
+    log(`Intentando reproducir [${currentProvider.constructor.name}]: "${texto}" con voz ${selectedVoice || 'default'}`);
+    const btn = document.getElementById('speakButton');
+    btn.disabled = true;
+    btn.textContent = 'Reproduciendo...';
+
+    try {
+        // Pasar opciones específicas si es necesario (aquí solo la voz)
+        await currentProvider.speak(texto, { voiceName: selectedVoice });
+        log(`Reproducción completada [${currentProvider.constructor.name}]: "${texto}"`);
+    } catch (error) {
+        log(`Error al reproducir [${currentProvider.constructor.name}]: ${error.message}`);
+        // Asegurarse de que el estado del botón se restaure incluso si speak() rechaza rápido
+        btn.disabled = false;
+        btn.textContent = 'Reproducir (Speak)';
+    } finally {
+        // El estado del botón se maneja aquí si la promesa se resuelve,
+        // pero si se rechaza, también debe manejarse en el catch.
+        // Para simplificar, lo ponemos aquí asegurándonos de que no interfiera con el reject.
+         if (btn.textContent === 'Reproduciendo...') { // Solo cambiar si aún estaba "Reproduciendo"
+             btn.disabled = false;
+             btn.textContent = 'Reproducir (Speak)';
+         }
+    }
+}
+
+async function ejemploGenerateUrl() {
+     if (!currentProvider) {
+        log("Por favor, selecciona un proveedor primero.");
+        return;
+    }
+
+    const texto = document.getElementById('textoInput').value || "Audio generado";
+    const voiceSelect = document.getElementById('voiceSelect');
+    const selectedVoice = voiceSelect.disabled ? currentProvider.config.defaultVoice : voiceSelect.value;
+    const urlOutput = document.getElementById('audioUrlOutput');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const generateButton = document.getElementById('generateButton');
+
+    log(`Generando URL [${currentProvider.constructor.name}] para: "${texto}" con voz ${selectedVoice || 'default'}`);
+    urlOutput.textContent = 'Generando...';
+    urlOutput.removeAttribute('href');
+    audioPlayer.src = ''; // Limpiar reproductor
+    generateButton.disabled = true; // Deshabilitar mientras genera
+
+    try {
+        const audioUrl = await currentProvider.generateAudioUrl(texto, { voiceName: selectedVoice });
+        log(`URL generada [${currentProvider.constructor.name}] (Blob): ${audioUrl.substring(0, 70)}...`);
+        urlOutput.textContent = `URL: ${audioUrl}`;
+        urlOutput.href = audioUrl;
+        urlOutput.target = '_blank';
+        audioPlayer.src = audioUrl;
+    } catch (error) {
+        log(`Error al generar URL [${currentProvider.constructor.name}]: ${error.message}`);
+        urlOutput.textContent = `Error: ${error.message}`;
+        // No re-habilitar el botón si la razón del error es que no está soportado
+        if (!(error.message.includes('not implemented') || error.message.includes('does not support'))) {
+             generateButton.disabled = false; // Re-habilitar si fue otro error
+        }
+    } finally {
+         // Asegurar que el botón se rehabilite si la generación fue exitosa
+         if (urlOutput.href && urlOutput.href !== '#') {
+             generateButton.disabled = false;
+         }
+    }
+}
+
+function ejemploStop() {
+    if (!currentProvider) {
+        log("Ningún proveedor seleccionado para detener.");
+        return;
+    }
+    log(`Deteniendo audio [${currentProvider.constructor.name}]...`);
+    currentProvider.stop();
+    // Reactivar botón de speak si estaba desactivado por reproducción
+    const btn = document.getElementById('speakButton');
+     if (btn.textContent === 'Reproduciendo...') {
+         btn.disabled = false;
+         btn.textContent = 'Reproducir (Speak)';
+     }
+    log(`Llamada a stop() [${currentProvider.constructor.name}] completada.`);
+}
+
+// --- Inicialización al Cargar la Página ---
+window.onload = async () => {
+    const providerSelect = document.getElementById('providerSelect');
+
+    // Asignar eventos a botones
+    document.getElementById('speakButton')?.addEventListener('click', ejemploSpeak);
+    document.getElementById('generateButton')?.addEventListener('click', ejemploGenerateUrl);
+    document.getElementById('stopButton')?.addEventListener('click', ejemploStop);
+
+    // Asignar evento al cambio de proveedor
+    providerSelect?.addEventListener('change', (event) => {
+        // Detener audio del proveedor anterior antes de cambiar
+        if (currentProvider) {
+             currentProvider.stop();
+        }
+        updateUIForProvider(event.target.value);
+    });
+
+    // Cargar el proveedor inicial seleccionado en el HTML
+    await updateUIForProvider(providerSelect.value);
+};
+    </script>
+</body>
+</html>
