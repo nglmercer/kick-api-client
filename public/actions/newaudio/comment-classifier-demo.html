@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clasificador de Comentarios con TTS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .comment {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .author {
+            font-weight: bold;
+        }
+        .timestamp {
+            color: #777;
+            font-size: 0.9em;
+        }
+        .comment-text {
+            margin-bottom: 10px;
+        }
+        .comment-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .comment-actions button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .read-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .category-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            color: white;
+        }
+        .category-positivo { background-color: #4CAF50; }
+        .category-negativo { background-color: #f44336; }
+        .category-pregunta { background-color: #2196F3; }
+        .category-spam { background-color: #FF9800; }
+        .category-default { background-color: #9E9E9E; }
+        
+        .controls {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .controls h2 {
+            margin-top: 0;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, button {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        button {
+            cursor: pointer;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        #add-comment-form {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        #add-comment-form input, #add-comment-form textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #add-comment-form button {
+            background-color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <h1>Clasificador de Comentarios con TTS</h1>
+    
+    <div class="controls">
+        <h2>Controles</h2>
+        <div class="control-group">
+            <label for="tts-provider">Proveedor TTS:</label>
+            <select id="tts-provider">
+                <option value="streamElements">StreamElements</option>
+                <option value="responsiveVoice">ResponsiveVoice</option>
+                <option value="webSpeech">Web Speech API</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label for="voice-select">Voz:</label>
+            <select id="voice-select">
+                <!-- Se llenará dinámicamente -->
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>Opciones de voz:</label>
+            <div>
+                <label>Velocidad: <span id="rate-value">1.0</span></label>
+                <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1.0">
+            </div>
+            <div>
+                <label>Tono: <span id="pitch-value">1.0</span></label>
+                <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1.0">
+            </div>
+            <div>
+                <label>Volumen: <span id="volume-value">0.8</span></label>
+                <input type="range" id="volume" min="0" max="1" step="0.1" value="0.8">
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button id="classify-all">Clasificar todos</button>
+            <button id="read-all">Leer todos</button>
+            <button id="stop-reading">Detener lectura</button>
+        </div>
+    </div>
+    
+    <div id="add-comment-form">
+        <h2>Añadir comentario</h2>
+        <input type="text" id="author" placeholder="Nombre de usuario" value="Usuario">
+        <textarea id="comment-text" placeholder="Escribe un comentario..." rows="3"></textarea>
+        <button id="add-comment">Añadir comentario</button>
+    </div>
+    
+    <h2>Comentarios</h2>
+    <div id="comments-container">
+        <!-- Los comentarios se añadirán aquí dinámicamente -->
+    </div>
+
+    <script type="module">
+        import { CommentClassifier } from './comment-classifier.js';
+        
+        // Comentarios de ejemplo
+        const sampleComments = [
+            {
+                id: "1",
+                text: "¡Este video es increíble! Me encanta tu contenido.",
+                author: "Usuario1",
+                timestamp: new Date()
+            },
+            {
+                id: "2",
+                text: "¿Cuándo vas a hacer un tutorial sobre este tema?",
+                author: "Usuario2",
+                timestamp: new Date()
+            },
+            {
+                id: "3",
+                text: "La calidad del audio es terrible, no se entiende nada.",
+                author: "Usuario3",
+                timestamp: new Date()
+            },
+            {
+                id: "4",
+                text: "Visita mi canal y suscríbete para más contenido como este!",
+                author: "Usuario4",
+                timestamp: new Date()
+            }
+        ];
+        
+        // Estado de la aplicación
+        let comments = [...sampleComments];
+        let classifiedComments = [];
+        let classifier;
+        
+        // Elementos DOM
+        const commentsContainer = document.getElementById('comments-container');
+        const ttsProviderSelect = document.getElementById('tts-provider');
+        const voiceSelect = document.getElementById('voice-select');
+        const rateInput = document.getElementById('rate');
+        const pitchInput = document.getElementById('pitch');
+        const volumeInput = document.getElementById('volume');
+        const rateValue = document.getElementById('rate-value');
+        const pitchValue = document.getElementById('pitch-value');
+        const volumeValue = document.getElementById('volume-value');
+        
+        // Botones
+        const classifyAllBtn = document.getElementById('classify-all');
+        const readAllBtn = document.getElementById('read-all');
+        const stopReadingBtn = document.getElementById('stop-reading');
+        const addCommentBtn = document.getElementById('add-comment');
+        
+        // Inicializar clasificador
+        async function initClassifier() {
+            classifier = new CommentClassifier({
+                aiEndpoint: "http://localhost:3000/api/classify", // Endpoint local (simulado)
+                ttsPreferences: {
+                    provider: ttsProviderSelect.value,
+                    voiceName: "Brian",
+                    rate: parseFloat(rateInput.value),
+                    pitch: parseFloat(pitchInput.value),
+                    volume: parseFloat(volumeInput.value)
+                }
+            });
+            
+            // Esperar a que se inicialicen los proveedores
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Cargar voces disponibles
+            updateVoiceList();
+            
+            // Clasificar comentarios iniciales
+            classifyComments();
+        }
+        
+        // Actualizar lista de voces según el proveedor seleccionado
+        function updateVoiceList() {
+            const provider = classifier.ttsProviders[ttsProviderSelect.value];
+            if (!provider) return;
+            
+            const voices = provider.getVoices();
+            voiceSelect.innerHTML = '';
+            
+            voices.forEach(voice => {
+                const option = document.createElement('option');
+                option.value = voice.name;
+                option.textContent = voice.name + (voice.lang ? ` (${voice.lang})` : '');
+                voiceSelect.appendChild(option);
+            });
+            
+            // Seleccionar la voz actual
+            if (classifier.ttsPreferences.voiceName) {
+                for (let i = 0; i < voiceSelect.options.length; i++) {
+                    if (voiceSelect.options[i].value === classifier.ttsPreferences.voiceName) {
+                        voiceSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Clasificar todos los comentarios
+        function classifyComments() {
+            // Usar la simulación en lugar de la API real
+            classifiedComments = classifier.simulateClassification(comments);
+            renderComments();
+        }
+        
+        // Renderizar comentarios en el DOM
+        function renderComments() {
+            commentsContainer.innerHTML = '';
+            
+            classifiedComments.forEach(comment => {
+                const commentEl = document.createElement('div');
+                commentEl.className = 'comment';
+                commentEl.dataset.id = comment.id;
+                
+                // Categoría
+                const category = comment.classification.category;
+                const categoryBadge = document.createElement('span');
+                categoryBadge.className = `category-badge category-${category}`;
+                categoryBadge.textContent = category;
+                commentEl.appendChild(categoryBadge);
+                
+                // Cabecera
+                const header = document.createElement('div');
+                header.className = 'comment-header';
+                
+                const author = document.createElement('span');
+                author.className = 'author';
+                author.textContent = comment.author;
+                
+                const timestamp = document.createElement('span');
+                timestamp.className = 'timestamp';
+                timestamp.textContent = comment.timestamp.toLocaleString();
+                
+                header.appendChild(author);
+                header.appendChild(timestamp);
+                commentEl.appendChild(header);
+                
+                // Texto
+                const text = document.createElement('div');
+                text.className = 'comment-text';
+                text.textContent = comment.text;
+                commentEl.appendChild(text);
+                
+                // Acciones
+                const actions = document.createElement('div');
+                actions.className = 'comment-actions';
+                
+                const readBtn = document.createElement('button');
+                readBtn.className = 'read-btn';
+                readBtn.textContent = 'Leer';
+                readBtn.onclick = () => readComment(comment);
+                
+                actions.appendChild(readBtn);
+                commentEl.appendChild(actions);
+                
+                commentsContainer.appendChild(commentEl);
+            });
+        }
+        
+        // Leer un comentario
+        async function readComment(comment) {
+            const options = {
+                voiceName: voiceSelect.value,
+                rate: parseFloat(rateInput.value),
+                pitch: parseFloat(pitchInput.value),
+                volume: parseFloat(volumeInput.value)
+            };
+            
+            await classifier.readComment(comment, options);
+        }
+        
+        // Leer todos los comentarios
+        async function readAllComments() {
+            classifier.clearQueue();
+            
+            const options = {
+                voiceName: voiceSelect.value,
+                rate: parseFloat(rateInput.value),
+                pitch: parseFloat(pitchInput.value),
+                volume: parseFloat(volumeInput.value)
+            };
+            
+            for (const comment of classifiedComments) {
+                classifier.queueComment(comment, options);
+            }
+        }
+        
+        // Añadir un nuevo comentario
+        function addComment() {
+            const authorInput = document.getElementById('author');
+            const textInput = document.getElementById('comment-text');
+            
+            const author = authorInput.value.trim();
+            const text = textInput.value.trim();
+            
+            if (!author || !text) {
+                alert('Por favor, completa todos los campos');
+                return;
+            }
+            
+            const newComment = {
+                id: Date.now().toString(),
+                author,
+                text,
+                timestamp: new Date()
+            };
+            
+            comments.push(newComment);
+            
+            // Clasificar el nuevo comentario
+            const classified = classifier.simulateClassification([newComment])[0];
+            classifiedComments.push(classified);
+            
+            // Actualizar la UI
+            renderComments();
+            
+            // Limpiar el formulario
+            textInput.value = '';
+        }
+        
+        // Event listeners
+        ttsProviderSelect.addEventListener('change', () => {
+            classifier.setTTSProvider(ttsProviderSelect.value);
+            updateVoiceList();
+        });
+        
+        rateInput.addEventListener('input', () => {
+            rateValue.textContent = rateInput.value;
+        });
+        
+        pitchInput.addEventListener('input', () => {
+            pitchValue.textContent = pitchInput.value;
+        });
+        
+        volumeInput.addEventListener('input', () => {
+            volumeValue.textContent = volumeInput.value;
+        });
+        
+        classifyAllBtn.addEventListener('click', classifyComments);
+        readAllBtn.addEventListener('click', readAllComments);
+        stopReadingBtn.addEventListener('click', () => classifier.stopReading());
+        addCommentBtn.addEventListener('click', addComment);
+        
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', initClassifier);
+    </script>
+</body>
+</html>
