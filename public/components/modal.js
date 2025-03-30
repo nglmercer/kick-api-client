@@ -1010,9 +1010,9 @@ customElements.define('custom-popup', CustomPopup);
 }
 
 // Ejemplo de prueba:
-console.log(safeParse("[{value: '123', label: '123'}, {value: '1234', label: '1234'}]"));
+/* console.log(safeParse("[{value: '123', label: '123'}, {value: '1234', label: '1234'}]"));
 
 console.log(safeParse('{"key": "value"}')); // Devuelve un objeto
 console.log(safeParse('not a json')); // Devuelve el string original
 console.log(safeParse(42)); // Devuelve 42 (número)
-console.log(safeParse({ key: "value" })); // Devuelve el objeto original
+console.log(safeParse({ key: "value" })); // Devuelve el objeto original */
