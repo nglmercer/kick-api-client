@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Provider Configuration</title>
+    <!-- Include your component definitions (ObjectEditForm, DynamicObjectDisplay, c-inp) -->
+    <script src="./tts-provider.js"></script>
+    <script src="./component.js"></script> <!-- Assuming c-inp is separate -->
+    <!-- Include TTS Provider definitions -->
+    <!-- Include Config Manager -->
+    <script src="./tts_config.js"></script>
+
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 900px; margin: auto; }
+        h2 { border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 30px; }
+        .config-section { margin-bottom: 30px; }
+        /* Example dark mode toggle */
+        .dark-toggle { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1>TTS Provider Configuration</h1>
+
+    <div class="dark-toggle">
+        <label>
+            <input type="checkbox" id="darkModeToggle"> Dark Mode
+        </label>
+    </div>
+
+    <div class="config-section">
+        <h2>StreamElements Provider</h2>
+        <dynamic-object-display id="config-streamElements" header-key="defaultVoice"></dynamic-object-display>
+    </div>
+
+    <div class="config-section">
+        <h2>ResponsiveVoice Provider</h2>
+        <dynamic-object-display id="config-responsiveVoice" header-key="defaultVoice"></dynamic-object-display>
+    </div>
+
+    <div class="config-section">
+        <h2>WebSpeech Provider</h2>
+        <dynamic-object-display id="config-webSpeech" header-key="defaultVoice"></dynamic-object-display>
+    </div>
+
+    <!-- Example Usage Area -->
+    <hr>
+    <h2>Test TTS</h2>
+    <div>
+        <label for="tts-text">Text:</label>
+        <input type="text" id="tts-text" value="Hello world, this is a test." size="50">
+    </div>
+    <div>
+        <label for="tts-provider-select">Provider:</label>
+        <select id="tts-provider-select">
+            <option value="streamElements">StreamElements</option>
+            <option value="responsiveVoice">ResponsiveVoice</option>
+            <option value="webSpeech">WebSpeech</option>
+        </select>
+        <button id="speak-button">Speak</button>
+        <button id="stop-button">Stop</button>
+    </div>
+    <div id="status"></div>
+
+
+    <script>
+        let statusDiv;
+        document.addEventListener('DOMContentLoaded', () => {
+            const providerNames = ['streamElements', 'responsiveVoice', 'webSpeech'];
+            const displayElements = {};
+            let currentProviders = {}; // To hold instantiated providers
+
+            // --- Initialize Config Forms ---
+            providerNames.forEach(name => {
+                const displayEl = document.getElementById(`config-${name}`);
+                if (displayEl) {
+                    displayElements[name] = displayEl;
+                    const currentConfig = TTSConfigManager.loadConfig(name);
+                    const fieldConfigs = TTSConfigManager.getFieldConfigs(name);
+                    displayEl.setConfig(currentConfig, fieldConfigs);
+
+                    // Add listener to save config when the form updates the item
+                    displayEl.addEventListener('item-updated', (event) => {
+                        console.log(`Config updated for ${name}, saving...`, event.detail);
+                        const saved = TTSConfigManager.saveConfig(name, event.detail);
+                        if (saved) {
+                            // Optionally reinstantiate the provider with new config
+                             instantiateProvider(name);
+                             // Maybe show a success message
+                        } else {
+                             // Show error message
+                             alert(`Failed to save configuration for ${name}!`);
+                        }
+                    });
+                } else {
+                    console.warn(`Could not find display element for ${name}`);
+                }
+            });
+
+            // --- Dark Mode Toggle ---
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const applyDarkMode = (isDark) => {
+                 document.body.style.backgroundColor = isDark ? '#222' : '#fff';
+                 document.body.style.color = isDark ? '#eee' : '#000';
+                 Object.values(displayElements).forEach(el => {
+                     if (isDark) el.setAttribute('darkmode', '');
+                     else el.removeAttribute('darkmode');
+                 });
+                 // Add dark mode to other elements if needed
+            };
+            darkModeToggle.addEventListener('change', (event) => {
+                applyDarkMode(event.target.checked);
+            });
+             // applyDarkMode(darkModeToggle.checked); // Apply initial state if needed
+
+
+             // --- Instantiate Providers ---
+             // We need to instantiate providers *after* loading their config
+             function instantiateProvider(name) {
+                 const config = TTSConfigManager.loadConfig(name);
+                 let providerInstance = null;
+                 let initPromise = Promise.resolve(false); // Default to not initialized
+
+                 try {
+                    if (name === 'streamElements') {
+                        providerInstance = new StreamElementsProvider(config);
+                        initPromise = providerInstance.init();
+                    } else if (name === 'responsiveVoice') {
+                         // Ensure RV library is loaded if using it
+                         if (typeof responsiveVoice !== 'undefined') {
+                            providerInstance = new ResponsiveVoiceProvider(config);
+                            initPromise = providerInstance.init();
+                         } else {
+                            console.warn("ResponsiveVoice library not loaded.");
+                         }
+                    } else if (name === 'webSpeech') {
+                        providerInstance = new WebSpeechProvider(config);
+                        initPromise = providerInstance.init();
+                    }
+                 } catch(err) {
+                    console.error(`Error creating provider ${name}:`, err);
+                 }
+
+
+                 if (providerInstance) {
+                     currentProviders[name] = { instance: providerInstance, initialized: false };
+                     console.log(`Instantiated ${name} with config:`, config);
+
+                     initPromise.then(success => {
+                         if (success) {
+                             currentProviders[name].initialized = true;
+                             console.log(`${name} provider initialized successfully.`);
+                             updateStatus(`${name} ready.`);
+                             // If voice list depends on init (RV/WS), could potentially update form here
+                         } else {
+                            console.warn(`${name} provider failed to initialize or is not available.`);
+                             updateStatus(`${name} unavailable.`);
+                             // Disable options related to this provider?
+                         }
+                     }).catch(err => {
+                         console.error(`Error initializing ${name} provider:`, err);
+                         updateStatus(`${name} init error.`);
+                     });
+                 } else {
+                     // Clear any old instance if creation failed
+                     delete currentProviders[name];
+                      updateStatus(`${name} cannot be created.`);
+                 }
+             }
+
+             // Initial instantiation
+             providerNames.forEach(instantiateProvider);
+
+
+             // --- Example Usage ---
+             const textInput = document.getElementById('tts-text');
+             const providerSelect = document.getElementById('tts-provider-select');
+             const speakButton = document.getElementById('speak-button');
+             const stopButton = document.getElementById('stop-button');
+            statusDiv = document.getElementById('status');
+             let activeProviderName = null; // Track which provider is currently speaking
+
+             function updateStatus(message) {
+                if (statusDiv) statusDiv.textContent = `Status: ${message}`;
+                 console.log(`Status: ${message}`);
+             }
+
+             speakButton.addEventListener('click', async () => {
+                 const selectedProviderName = providerSelect.value;
+                 const textToSpeak = textInput.value;
+                 const providerInfo = currentProviders[selectedProviderName];
+
+                 if (!textToSpeak) {
+                     updateStatus("Enter text to speak.");
+                     return;
+                 }
+
+                 if (!providerInfo || !providerInfo.instance) {
+                      updateStatus(`${selectedProviderName} provider not available or not created.`);
+                      return;
+                 }
+                 if (!providerInfo.initialized) {
+                     updateStatus(`${selectedProviderName} provider not yet initialized.`);
+                      // Optional: Try to re-initialize? Or just wait.
+                      // await providerInfo.instance.init(); // Re-attempt (might be risky)
+                      // if(!providerInfo.instance.isAvailable()) { ... }
+                     return;
+                 }
+
+
+                 // Stop any previous speech first (from any provider)
+                 Object.values(currentProviders).forEach(pInfo => pInfo.instance?.stop());
+                 activeProviderName = selectedProviderName; // Mark this as the active one
+                 updateStatus(`Speaking with ${selectedProviderName}...`);
+
+
+                 try {
+                     // Speak using the *current* config loaded by the provider instance
+                     await providerInfo.instance.speak(textToSpeak);
+                     updateStatus(`Finished speaking with ${selectedProviderName}.`);
+                     activeProviderName = null;
+                 } catch (error) {
+                     console.error(`Error speaking with ${selectedProviderName}:`, error);
+                     updateStatus(`Error with ${selectedProviderName}: ${error.message}`);
+                     activeProviderName = null;
+                 }
+             });
+
+             stopButton.addEventListener('click', () => {
+                 if (activeProviderName && currentProviders[activeProviderName]?.instance) {
+                     console.log(`Stopping active provider: ${activeProviderName}`);
+                     currentProviders[activeProviderName].instance.stop();
+                     updateStatus(`Stopped ${activeProviderName}.`);
+                 } else {
+                     // Stop all just in case state is weird
+                     console.log('Stopping all providers.');
+                     Object.values(currentProviders).forEach(pInfo => pInfo.instance?.stop());
+                      updateStatus("Stopped any active speech.");
+                 }
+                 activeProviderName = null;
+             });
+
+        });
+    </script>
+
+</body>
+</html>
